@@ -8,7 +8,10 @@ router.post('/check', domainController.checkAvailability);
 // POST /api/domains/bulk-check - Check multiple domains
 router.post('/bulk-check', domainController.bulkCheckAvailability);
 
-// GET /api/domains/suggestions - Get domain suggestions based on input
-router.get('/suggestions', domainController.getSuggestions);
+// GET /api/domains/cache-stats - Get cache statistics
+router.get('/cache-stats', domainController.getCacheStats);
+
+// POST /api/domains/clear-cache - Clear the domain cache
+router.post('/clear-cache', domainController.clearCache);
 
 module.exports = router;

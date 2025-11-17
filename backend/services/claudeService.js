@@ -45,7 +45,7 @@ Remember: Users want to keep Gmail but have a custom domain for their email addr
         model: this.model,
         max_tokens: options.max_tokens || 4096,
         temperature: options.temperature || 0.7,
-        system: this.getSystemPrompt(),
+        system: options.system || this.getSystemPrompt(),
         messages: messages
       });
 

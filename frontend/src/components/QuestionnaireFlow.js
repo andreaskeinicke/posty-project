@@ -9,6 +9,7 @@ function QuestionnaireFlow({ onComplete, onBack }) {
   const [responses, setResponses] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [tagInput, setTagInput] = useState('');
 
   useEffect(() => {
     loadQuestionnaire();
@@ -151,7 +152,6 @@ function QuestionnaireFlow({ onComplete, onBack }) {
 
       case 'tags':
         const tags = value || [];
-        const [tagInput, setTagInput] = useState('');
         return (
           <div className="tags-container">
             <div className="tags-list">

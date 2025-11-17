@@ -1,81 +1,145 @@
-.App {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-.app-container {
-  background: white;
-  border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  overflow: hidden;
-  min-height: 600px;
-  display: flex;
-  flex-direction: column;
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.app-header {
+.gradient-bg {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 30px;
-  text-align: center;
 }
 
-.logo {
+.chat-container {
+  height: 80vh;
+}
+
+/* Message animations */
+.message-enter {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Typing indicator */
+.typing-indicator span {
+  animation: blink 1.4s infinite;
+}
+
+.typing-indicator span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes blink {
+  0%, 60%, 100% {
+    opacity: 0.3;
+  }
+  30% {
+    opacity: 1;
+  }
+}
+
+/* Voice wave animation */
+.voice-wave {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 10px;
+  gap: 3px;
+  height: 20px;
 }
 
-.logo-icon {
-  font-size: 40px;
+.voice-bar {
+  width: 3px;
+  background: white;
+  border-radius: 2px;
+  animation: wave 1s ease-in-out infinite;
 }
 
-.logo h1 {
-  font-size: 42px;
-  font-weight: 700;
-  margin: 0;
+.voice-bar:nth-child(1) {
+  animation-delay: 0s;
 }
 
-.tagline {
-  font-size: 16px;
-  opacity: 0.9;
-  margin: 0;
+.voice-bar:nth-child(2) {
+  animation-delay: 0.1s;
 }
 
-.app-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+.voice-bar:nth-child(3) {
+  animation-delay: 0.2s;
 }
 
-.app-footer {
-  background: #f8f9fa;
-  padding: 15px;
-  text-align: center;
-  border-top: 1px solid #e9ecef;
+.voice-bar:nth-child(4) {
+  animation-delay: 0.3s;
 }
 
-.app-footer p {
-  margin: 0;
-  font-size: 14px;
-  color: #6c757d;
+.voice-bar:nth-child(5) {
+  animation-delay: 0.4s;
 }
 
-@media (max-width: 768px) {
-  .app-container {
-    border-radius: 0;
-    min-height: 100vh;
+@keyframes wave {
+  0%, 100% {
+    height: 8px;
+  }
+  50% {
+    height: 20px;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c4c4c4;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+  .flex.gap-6 {
+    flex-direction: column;
   }
 
-  .logo h1 {
-    font-size: 32px;
+  .w-80 {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .chat-container {
+    height: 90vh;
   }
 
-  .logo-icon {
-    font-size: 32px;
+  .p-6 {
+    padding: 1rem;
   }
 }

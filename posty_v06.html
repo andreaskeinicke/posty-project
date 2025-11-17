@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Posty - Get Your Perfect Email</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .message-enter {
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .typing-indicator span {
+            animation: blink 1.4s infinite;
+        }
+        
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes blink {
+            0%, 60%, 100% { opacity: 0.3; }
+            30% { opacity: 1; }
+        }
+        
+        .voice-wave {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            height: 20px;
+        }
+        
+        .voice-bar {
+            width: 3px;
+            background: white;
+            border-radius: 2px;
+            animation: wave 1s ease-in-out infinite;
+        }
+        
+        .voice-bar:nth-child(1) { animation-delay: 0s; }
+        .voice-bar:nth-child(2) { animation-delay: 0.1s; }
+        .voice-bar:nth-child(3) { animation-delay: 0.2s; }
+        .voice-bar:nth-child(4) { animation-delay: 0.3s; }
+        .voice-bar:nth-child(5) { animation-delay: 0.4s; }
+        
+        @keyframes wave {
+            0%, 100% { height: 8px; }
+            50% { height: 20px; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // City abbreviation mapping
+        const CITY_ABBREVIATIONS = {
+            'copenhagen': 'cph',
+            'barcelona': 'bcn',
+            'london': 'ldn',
+            'new york': 'nyc',
+            'los angeles': 'la',
+            'san francisco': 'sf',
+            'paris': 'par',
+            'berlin': 'ber',
+            'amsterdam': 'ams',
+            'tokyo': 'tyo',
+            'madrid': 'mad',
+            'rome': 'rom',
+            'lisbon': 'lis',
+            'stockholm': 'sto',
+            'oslo': 'osl',
+            'helsinki': 'hel',
+            'dublin': 'dub',
+            'chicago': 'chi',
+            'boston': 'bos',
+            'seattle': 'sea',
+            'miami': 'mia'
+        };
+
+        // Character normalization for international names
+        const CHAR_MAPPINGS = {
+            // Scandinavian
+            'ø': 'o', 'ö': 'o', 'å': 'aa', 'æ': 'ae',
+            // German
+            'ü': 'ue', 'ä': 'ae', 'ß': 'ss',
+            // French
+            'é': 'e', 'è': 'e', 'ê': 'e', 'à': 'a', 'â': 'a', 'ç': 'c',
+            // Spanish
+            'ñ': 'n', 'á': 'a', 'í': 'i', 'ó': 'o', 'ú': 'u',
+            // Portuguese
+            'ã': 'a', 'õ': 'o',
+            // Eastern European
+            'ł': 'l', 'ż': 'z', 'ź': 'z', 'ś': 's', 'č': 'c', 'ć': 'c'
+        };
+
+        const normalizeName = (name) => {
+            let normalized = name.toLowerCase();
+            for (const [special, replacement] of Object.entries(CHAR_MAPPINGS)) {
+                normalized = normalized.replace(new RegExp(special, 'g'), replacement);
+            }
+            // Remove any remaining non-ASCII
+            normalized = normalized.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            return normalized;
+        };
+
+        const parseName = (fullName) => {
+            const parts = fullName.trim().split(/\s+/);
+            if (parts.length === 1) {
+                return { firstName: parts[0], middleName: '', lastName: '' };
+            } else if (parts.length === 2) {
+                return { firstName: parts[0], middleName: '', lastName: parts[1] };
+            } else {
+                return {
+                    firstName: parts[0],
+                    middleName: parts.slice(1, -1).join(' '),
+                    lastName: parts[parts.length - 1]
+                };
+            }
+        };
+
+        const generateHandles = (firstName, middleName, lastName) => {
+            const first = normalizeName(firstName);
+            const middle = middleName ? normalizeName(middleName) : '';
+            const last = normalizeName(lastName);
+            
+            const handles = [];
+            
+            if (middle) {
+                handles.push(first[0] + middle[0] + last[0]); // akg
+                handles.push(first.slice(0,2) + middle.slice(0,2) + last.slice(0,2)); // ankegu
+            } else if (last) {
+                handles.push(first[0] + last[0]); // ag
+                handles.push(first.slice(0,2) + last.slice(0,2)); // angu
+            }
+            
+            if (last) {
+                handles.push(first + last[0]); // andreasg
+            }
+            
+            if (first.length <= 5 && middle) {
+                handles.push(first + middle.slice(0,2)); // andrke
+            }
+            if (first.length <= 5 && last) {
+                handles.push(first + last.slice(0,2)); // andrgu
+            }
+            
+            return [...new Set(handles)];
+        };
+
+        const getTLDsFromCountry = (country) => {
+            const countryLower = country.toLowerCase();
+            if (countryLower.includes('denmark') || countryLower.includes('danish')) {
+                return ['.dk', '.eu', '.me'];
+            } else if (countryLower.includes('united states') || countryLower.includes('usa') || countryLower.includes('us')) {
+                return ['.us', '.io', '.me'];
+            } else if (countryLower.includes('united kingdom') || countryLower.includes('uk') || countryLower.includes('britain')) {
+                return ['.uk', '.eu', '.io'];
+            } else if (countryLower.includes('spain') || countryLower.includes('spanish')) {
+                return ['.es', '.eu', '.io'];
+            } else if (countryLower.includes('germany') || countryLower.includes('german')) {
+                return ['.de', '.eu', '.io'];
+            } else if (countryLower.includes('france') || countryLower.includes('french')) {
+                return ['.fr', '.eu', '.io'];
+            } else if (countryLower.includes('italy') || countryLower.includes('italian')) {
+                return ['.it', '.eu', '.io'];
+            } else if (countryLower.includes('netherlands') || countryLower.includes('dutch')) {
+                return ['.nl', '.eu', '.io'];
+            } else if (countryLower.includes('sweden') || countryLower.includes('swedish')) {
+                return ['.se', '.eu', '.me'];
+            } else if (countryLower.includes('norway') || countryLower.includes('norwegian')) {
+                return ['.no', '.eu', '.me'];
+            }
+            return ['.com', '.io', '.me'];
+        };
+
+        const getCityAbbreviation = (city) => {
+            const cityLower = city.toLowerCase().trim();
+            return CITY_ABBREVIATIONS[cityLower] || null;
+        };
+
+        const generateDomainSuggestions = (userInfo) => {
+            const { preferredName, normalizedName, firstName, middleName, lastName, handles, tlds, cityAbbreviation, professions } = userInfo;
+            const suggestions = {
+                fullName: [],
+                handles: [],
+                city: [],
+                profession: {}
+            };
+
+            const normalizedFirstName = normalizeName(firstName);
+            const normalizedMiddleName = middleName ? normalizeName(middleName) : '';
+            const normalizedLastName = lastName ? normalizeName(lastName) : '';
+
+            // Category 1: Full name variations (TRUE name)
+            for (const tld of tlds) {
+                // First name only
+                if ((normalizedFirstName + tld).length <= 15) {
+                    suggestions.fullName.push(normalizedFirstName + tld);
+                }
+                
+                // First + middle (if middle exists)
+                if (normalizedMiddleName && (normalizedFirstName + normalizedMiddleName + tld).length <= 20) {
+                    suggestions.fullName.push(normalizedFirstName + normalizedMiddleName + tld);
+                }
+                
+                // First initial + middle (if middle exists)
+                if (normalizedMiddleName && (normalizedFirstName[0] + normalizedMiddleName + tld).length <= 15) {
+                    suggestions.fullName.push(normalizedFirstName[0] + normalizedMiddleName + tld);
+                }
+                
+                // First + last (if last exists)
+                if (normalizedLastName && (normalizedFirstName + normalizedLastName + tld).length <= 20) {
+                    suggestions.fullName.push(normalizedFirstName + normalizedLastName + tld);
+                }
+            }
+
+            // Category 2: Short handles
+            for (const handle of handles) {
+                for (const tld of tlds) {
+                    if ((handle + tld).length <= 12) {
+                        suggestions.handles.push(handle + tld);
+                    }
+                }
+            }
+
+            // Category 3: City-based domains
+            if (cityAbbreviation) {
+                for (const tld of tlds) {
+                    if ((normalizedName + cityAbbreviation + tld).length <= 16) {
+                        suggestions.city.push(normalizedName + cityAbbreviation + tld);
+                    }
+                    if (handles[0] && (handles[0] + cityAbbreviation + tld).length <= 12) {
+                        suggestions.city.push(handles[0] + cityAbbreviation + tld);
+                    }
+                }
+            }
+
+            // Category 4+: Profession-based domains (only if profession is short or makes sense)
+            for (const profession of professions) {
+                const prof = profession.toLowerCase();
+                suggestions.profession[profession] = [];
+                
+                // Only create profession domains if profession is short (<=8 chars) or commonly abbreviated
+                if (prof.length <= 8) {
+                    for (const tld of tlds.slice(0, 2)) {
+                        if ((normalizedName + prof + tld).length <= 18) {
+                            suggestions.profession[profession].push(normalizedName + prof + tld);
+                        }
+                        if ((prof + normalizedName + tld).length <= 18) {
+                            suggestions.profession[profession].push(prof + normalizedName + tld);
+                        }
+                    }
+                }
+            }
+
+            // Remove duplicates
+            suggestions.fullName = [...new Set(suggestions.fullName)];
+            suggestions.handles = [...new Set(suggestions.handles)];
+            suggestions.city = [...new Set(suggestions.city)];
+            
+            return suggestions;
+        };
+
+        const InfoSidebar = () => (
+            <div className="space-y-4">
+                <h3 className="font-semibold text-gray-900">What is Posty?</h3>
+                <div className="space-y-3 text-sm text-gray-600">
+                    <p>Get a custom email address with your own domain while keeping Gmail.</p>
+                    <div className="space-y-2">
+                        <div className="flex items-start gap-2">
+                            <span className="text-purple-600 font-bold">✓</span>
+                            <span>Your own domain (e.g., andreas@yourdomain.com)</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                            <span className="text-purple-600 font-bold">✓</span>
+                            <span>Still use Gmail (no switching needed)</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                            <span className="text-purple-600 font-bold">✓</span>
+                            <span>Professional email identity</span>
+                        </div>
+                    </div>
+                    <div className="pt-3 border-t">
+                        <p className="font-medium text-gray-900">$5/month</p>
+                        <p className="text-xs text-gray-500">+ domain cost (~$10-15/year)</p>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const CapturedInfoSidebar = ({ userInfo }) => {
+            const hasSpecialChars = userInfo.preferredName !== userInfo.normalizedName;
+            
+            return (
+                <div className="space-y-4">
+                    <h3 className="font-semibold text-gray-900">About You</h3>
+                    
+                    {userInfo.fullName && (
+                        <div>
+                            <p className="text-xs text-gray-500 mb-1">Name</p>
+                            <span className="inline-block px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
+                                {userInfo.fullName}
+                            </span>
+                            {hasSpecialChars && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                    For domains: "{userInfo.normalizedName}"
+                                </p>
+                            )}
+                        </div>
+                    )}
+                    
+                    {userInfo.locationString && (
+                        <div>
+                            <p className="text-xs text-gray-500 mb-1">Location</p>
+                            <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                                {userInfo.locationString}
+                            </span>
+                        </div>
+                    )}
+                    
+                    {userInfo.professions && userInfo.professions.length > 0 && (
+                        <div>
+                            <p className="text-xs text-gray-500 mb-1">Profession</p>
+                            <div className="flex flex-wrap gap-2">
+                                {userInfo.professions.map((prof, i) => (
+                                    <span key={i} className="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
+                                        {prof}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    
+                    {userInfo.interests && userInfo.interests.length > 0 && (
+                        <div>
+                            <p className="text-xs text-gray-500 mb-1">Interests</p>
+                            <div className="flex flex-wrap gap-2">
+                                {userInfo.interests.map((interest, i) => (
+                                    <span key={i} className="inline-block px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">
+                                        {interest}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const PostyChatbot = () => {
+            const [messages, setMessages] = useState([]);
+            const [inputValue, setInputValue] = useState('');
+            const [stage, setStage] = useState('welcome'); // welcome, location, state, profession, interests, review, more_options, confirm_choice, purchase
+            const [isTyping, setIsTyping] = useState(false);
+            const [userInfo, setUserInfo] = useState({
+                fullName: '',
+                firstName: '',
+                middleName: '',
+                lastName: '',
+                preferredName: '',
+                normalizedName: '',
+                country: '',
+                city: '',
+                cityAbbreviation: null,
+                state: '',
+                locationString: '',
+                tlds: [],
+                professions: [],
+                interests: [],
+                handles: []
+            });
+            const [isListening, setIsListening] = useState(false);
+            const [recognition, setRecognition] = useState(null);
+            const messagesEndRef = useRef(null);
+            const inputRef = useRef(null);
+
+            useEffect(() => {
+                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    const recognitionInstance = new SpeechRecognition();
+                    recognitionInstance.continuous = false;
+                    recognitionInstance.interimResults = false;
+                    recognitionInstance.lang = 'en-US';
+
+                    recognitionInstance.onresult = (event) => {
+                        const transcript = event.results[0][0].transcript;
+                        setInputValue(transcript);
+                        setIsListening(false);
+                        // Refocus input after voice input
+                        setTimeout(() => {
+                            if (inputRef.current) {
+                                inputRef.current.focus();
+                            }
+                        }, 100);
+                    };
+
+                    recognitionInstance.onerror = () => {
+                        setIsListening(false);
+                    };
+
+                    recognitionInstance.onend = () => {
+                        setIsListening(false);
+                    };
+
+                    setRecognition(recognitionInstance);
+                }
+
+                addBotMessage("Hi! I'm here to help you find the perfect email domain. What's your full name?");
+                
+                // Focus input on load
+                setTimeout(() => {
+                    if (inputRef.current) {
+                        inputRef.current.focus();
+                    }
+                }, 1000);
+            }, []);
+
+            useEffect(() => {
+                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }, [messages, isTyping]);
+
+            useEffect(() => {
+                // Auto-focus input after typing finishes
+                if (!isTyping && inputRef.current) {
+                    inputRef.current.focus();
+                }
+            }, [isTyping]);
+
+            const addBotMessage = (text, delay = 800) => {
+                setIsTyping(true);
+                setTimeout(() => {
+                    setMessages(prev => [...prev, { text, sender: 'bot' }]);
+                    setIsTyping(false);
+                }, delay);
+            };
+
+            const addUserMessage = (text) => {
+                setMessages(prev => [...prev, { text, sender: 'user' }]);
+            };
+
+            const toggleVoiceInput = () => {
+                if (!recognition) return;
+
+                if (isListening) {
+                    recognition.stop();
+                    setIsListening(false);
+                } else {
+                    recognition.start();
+                    setIsListening(true);
+                }
+            };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (!inputValue.trim() || isTyping) return;
+
+                addUserMessage(inputValue);
+                processInput(inputValue);
+                setInputValue('');
+                
+                // Refocus input after submit
+                setTimeout(() => {
+                    if (inputRef.current) {
+                        inputRef.current.focus();
+                    }
+                }, 100);
+            };
+
+            const processInput = (input) => {
+                const trimmedInput = input.trim();
+
+                switch (stage) {
+                    case 'welcome':
+                        const nameParts = parseName(trimmedInput);
+                        const preferred = normalizeName(nameParts.firstName);
+                        const handles = generateHandles(nameParts.firstName, nameParts.middleName, nameParts.lastName);
+                        
+                        setUserInfo(prev => ({
+                            ...prev,
+                            fullName: trimmedInput,
+                            firstName: nameParts.firstName,
+                            middleName: nameParts.middleName,
+                            lastName: nameParts.lastName,
+                            preferredName: nameParts.firstName.toLowerCase(),
+                            normalizedName: preferred,
+                            handles: handles
+                        }));
+                        
+                        setStage('location');
+                        addBotMessage(`Nice to meet you, ${nameParts.firstName}! What country and city are you in?`);
+                        break;
+
+                    case 'location':
+                        // Parse location (expecting "City, Country" or "Country")
+                        const locationParts = trimmedInput.split(',').map(s => s.trim());
+                        let country, city, state = '';
+                        
+                        if (locationParts.length >= 2) {
+                            city = locationParts[0];
+                            country = locationParts[locationParts.length - 1];
+                            if (locationParts.length === 3) {
+                                state = locationParts[1]; // For US: "San Francisco, California, United States"
+                            }
+                        } else {
+                            country = locationParts[0];
+                            city = '';
+                        }
+
+                        const tlds = getTLDsFromCountry(country);
+                        const cityAbbr = city ? getCityAbbreviation(city) : null;
+                        
+                        // Check if US and no state mentioned
+                        const isUS = country.toLowerCase().includes('united states') || 
+                                   country.toLowerCase().includes('usa') || 
+                                   country.toLowerCase() === 'us';
+                        
+                        setUserInfo(prev => ({
+                            ...prev,
+                            country,
+                            city,
+                            state,
+                            cityAbbreviation: cityAbbr,
+                            locationString: city ? `${city}, ${country}` : country,
+                            tlds
+                        }));
+
+                        if (isUS && !state && city) {
+                            setStage('state');
+                            addBotMessage(`Got it. What state is ${city} in?`);
+                        } else {
+                            setStage('profession');
+                            addBotMessage("What do you do professionally? (you can mention several occupations or positions if relevant)");
+                        }
+                        break;
+
+                    case 'state':
+                        setUserInfo(prev => ({
+                            ...prev,
+                            state: trimmedInput,
+                            locationString: `${prev.city}, ${trimmedInput}, ${prev.country}`
+                        }));
+                        setStage('profession');
+                        addBotMessage("What do you do professionally? (you can mention several occupations or positions if relevant)");
+                        break;
+
+                    case 'profession':
+                        // Split multiple professions
+                        const professions = trimmedInput
+                            .split(/,|\band\b/i)
+                            .map(p => p.trim())
+                            .filter(p => p.length > 0)
+                            .map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase());
+
+                        setUserInfo(prev => ({
+                            ...prev,
+                            professions
+                        }));
+
+                        setStage('interests');
+                        addBotMessage("This is optional, but it helps me get creative: What are you interested in? (or say 'skip')");
+                        break;
+
+                    case 'interests':
+                        if (trimmedInput.toLowerCase() === 'skip' || trimmedInput.toLowerCase() === 'none') {
+                            setStage('review');
+                            showRecommendations();
+                        } else {
+                            const interests = trimmedInput
+                                .split(/,|\band\b/i)
+                                .map(i => i.trim())
+                                .filter(i => i.length > 0);
+
+                            setUserInfo(prev => ({
+                                ...prev,
+                                interests
+                            }));
+
+                            setStage('review');
+                            showRecommendations();
+                        }
+                        break;
+
+                    case 'review':
+                        const lowerInput = trimmedInput.toLowerCase();
+                        
+                        // User mentions a specific domain - help them lock in
+                        if (lowerInput.includes('.dk') || lowerInput.includes('.com') || lowerInput.includes('.io') || 
+                            lowerInput.includes('.me') || lowerInput.includes('.eu') || lowerInput.includes('.')) {
+                            const domain = trimmedInput.trim();
+                            setStage('confirm_choice');
+                            addBotMessage(`Love it! ${domain} is a great choice. Let me check if it's available... (Availability checking coming soon!)\n\nFor now, should we move forward with this one?`);
+                        }
+                        // User wants to explore more
+                        else if (lowerInput.includes('more') || lowerInput.includes('other') || lowerInput.includes('different') || 
+                                 lowerInput.includes('explore') || lowerInput.includes('not sure')) {
+                            setStage('more_options');
+                            addBotMessage("Let's find the perfect fit! What direction should we explore?\n\n• **Shorter** (ultra-minimal like 'ak.dk')\n• **Location-based** (showing your city)\n• **Creative** (based on your interests)\n• **Professional** (full name style)\n• **Something else** (just tell me!)\n\nWhat feels right?");
+                        }
+                        // User likes something but didn't specify which
+                        else if (lowerInput.includes('yes') || lowerInput.includes('like') || lowerInput.includes('love') || 
+                                 lowerInput.includes('good') || lowerInput.includes('great')) {
+                            addBotMessage("Awesome! Which one caught your eye? Just type the full domain (like 'andreas.dk') and I'll get it ready for you.");
+                        }
+                        // User seems uncertain or negative
+                        else if (lowerInput.includes('not') || lowerInput.includes('no') || lowerInput.includes('none') || 
+                                 lowerInput.includes('hmm') || lowerInput.includes('maybe')) {
+                            setStage('more_options');
+                            addBotMessage("No worries! Let's find something that really clicks. What's not quite working with these options? Too long? Too short? Want something more creative or more professional?");
+                        }
+                        // User needs help deciding
+                        else if (lowerInput.includes('help') || lowerInput.includes('which') || lowerInput.includes('decide') || 
+                                 lowerInput.includes('recommend') || lowerInput.includes('suggest')) {
+                            addBotMessage(`Based on what I know about you, I'd personally lean towards:\n\n• **andreas.dk** - Clean, professional, easy to remember\n• **akg.dk** - Super short, great for business cards\n• **andreascph.dk** - Shows your Copenhagen connection\n\nBut it really depends on what feels right to YOU. What's your gut saying?`);
+                        }
+                        // Unclear response
+                        else {
+                            addBotMessage("I want to make sure we find the perfect domain for you! You can:\n\n• Tell me which domain you like\n• Ask to explore different styles\n• Let me know what you're looking for\n\nWhat would help?");
+                        }
+                        break;
+
+                    case 'more_options':
+                        // Generate new suggestions based on what they asked for
+                        const preference = trimmedInput.toLowerCase();
+                        
+                        if (preference.includes('short') || preference.includes('minimal') || preference.includes('brief')) {
+                            addBotMessage("Here are some ultra-short options:\n\n• **akg** (.com / .io / .me)\n• **anke** (.dk / .io / .me)\n• **ak** (.dk / .io)\n• **kg** (.dk / .com)\n\nShort domains are powerful - easy to say, easy to remember. Any of these jumping out at you?");
+                        } else if (preference.includes('location') || preference.includes('city') || preference.includes('copenhagen') || preference.includes('cph')) {
+                            addBotMessage("Location-based suggestions:\n\n• **andreascph.dk** - Name + city code\n• **akgcph.io** - Handle + Copenhagen\n• **cphandreas.me** - City first\n• **sejs.dk** - Your actual city!\n\nThese show where you're rooted. What do you think?");
+                        } else if (preference.includes('creative') || preference.includes('interest') || preference.includes('unique') || preference.includes('fun')) {
+                            const interests = userInfo.interests.slice(0, 2);
+                            const interestExamples = interests.length > 0 
+                                ? `• **andreas${interests[0].toLowerCase().slice(0,4)}.dk**\n• **${interests[0].toLowerCase()}andreas.io**\n`
+                                : '';
+                            addBotMessage(`Based on your interests:\n\n${interestExamples}• **andreas.coffee** - If you love coffee!\n• **coffeeak.io** - Personality meets passion\n• **brandbyandreas.dk** - If Brøndby means something\n\nCreative domains tell a story. Do any of these resonate with you?`);
+                        } else if (preference.includes('professional') || preference.includes('full') || preference.includes('formal') || preference.includes('business')) {
+                            addBotMessage("Professional full-name options:\n\n• **andreaskeinicke.dk** - Your full professional name\n• **akeinicke.dk** - Streamlined version\n• **keinicke.dk** - Just your middle/last name\n• **andreasgustavsen.com** - Classic .com\n\nThese command respect and are great for professional branding. Which style feels most 'you'?");
+                        } else if (preference.includes('something else') || preference.includes('tell me')) {
+                            addBotMessage("I'm all ears! What are you envisioning? Maybe:\n\n• A certain length?\n• Include a specific word?\n• Match a certain vibe (playful, serious, tech-focused)?\n• Use a specific TLD (.com, .io, .dk)?\n\nJust describe what you're imagining!");
+                        } else {
+                            // Default: show a mix
+                            addBotMessage("Let me show you a few different styles:\n\n**Ultra-short:**\n• akg (.dk / .io / .me)\n• anke (.dk / .io)\n\n**Your location:**\n• andreascph.dk\n• akgcph.io\n\n**Full name:**\n• andreaskeinicke (.dk / .com)\n• keinicke.dk\n\n**Creative:**\n• andreas.coffee\n• coffeeak.io\n\nSee any that click? Or want to go in another direction?");
+                        }
+                        setStage('review');
+                        break;
+
+                    case 'confirm_choice':
+                        const confirmLower = trimmedInput.toLowerCase();
+                        
+                        // User confirms they want to move forward
+                        if (confirmLower.includes('yes') || confirmLower.includes('sure') || confirmLower.includes('go') || 
+                            confirmLower.includes('forward') || confirmLower.includes('proceed')) {
+                            setStage('purchase');
+                            addBotMessage("Perfect! Let's make it yours. I'll set everything up for you:\n\n✓ Domain registration\n✓ Gmail integration\n✓ Email forwarding\n\n(Purchase flow coming soon! 🚀)");
+                        }
+                        // User wants to keep looking
+                        else if (confirmLower.includes('actually') || confirmLower.includes('wait') || confirmLower.includes('different') || 
+                                 confirmLower.includes('other') || confirmLower.includes('no')) {
+                            setStage('more_options');
+                            addBotMessage("No problem! Let's find the one that really feels right. What would you like to explore?");
+                        }
+                        // User types a different domain
+                        else if (confirmLower.includes('.')) {
+                            const newDomain = trimmedInput.trim();
+                            addBotMessage(`Ah, you prefer ${newDomain}! Great choice. Should we go with this one instead?`);
+                        }
+                        // Unclear
+                        else {
+                            addBotMessage("Want to lock this in? Just say 'yes' and I'll get it set up. Or if you'd like to keep exploring, let me know!");
+                        }
+                        break;
+                }
+            };
+
+            const showRecommendations = () => {
+                setIsTyping(true);
+                setTimeout(() => {
+                    const suggestions = generateDomainSuggestions(userInfo);
+                    
+                    let message = "Perfect! Here are some great options for you:\n\n";
+                    
+                    // Category 1: Full name variations
+                    if (suggestions.fullName.length > 0) {
+                        message += "**Your Name:**\n";
+                        // Group by base domain
+                        const baseDomains = {};
+                        suggestions.fullName.forEach(domain => {
+                            const parts = domain.split('.');
+                            const base = parts[0];
+                            const tld = '.' + parts.slice(1).join('.');
+                            if (!baseDomains[base]) baseDomains[base] = [];
+                            baseDomains[base].push(tld);
+                        });
+                        
+                        Object.entries(baseDomains).slice(0, 4).forEach(([base, tlds]) => {
+                            if (tlds.length > 1) {
+                                message += `• ${base} (${tlds.join(' / ')})\n`;
+                            } else {
+                                message += `• ${base}${tlds[0]}\n`;
+                            }
+                        });
+                        message += "\n";
+                    }
+
+                    // Category 2: Short handles
+                    if (suggestions.handles.length > 0) {
+                        message += "**Short Handles:**\n";
+                        // Group by base handle
+                        const baseHandles = {};
+                        suggestions.handles.forEach(domain => {
+                            const parts = domain.split('.');
+                            const base = parts[0];
+                            const tld = '.' + parts.slice(1).join('.');
+                            if (!baseHandles[base]) baseHandles[base] = [];
+                            baseHandles[base].push(tld);
+                        });
+                        
+                        Object.entries(baseHandles).slice(0, 4).forEach(([base, tlds]) => {
+                            if (tlds.length > 1) {
+                                message += `• ${base} (${tlds.join(' / ')})\n`;
+                            } else {
+                                message += `• ${base}${tlds[0]}\n`;
+                            }
+                        });
+                        message += "\n";
+                    }
+
+                    // Category 3: City-based
+                    if (suggestions.city.length > 0) {
+                        message += "**Your Location:**\n";
+                        suggestions.city.slice(0, 3).forEach(domain => {
+                            message += `• ${domain}\n`;
+                        });
+                        message += "\n";
+                    }
+
+                    // Category 4+: Profession-based
+                    Object.entries(suggestions.profession).forEach(([profession, domains]) => {
+                        if (domains.length > 0) {
+                            message += `**For ${profession}:**\n`;
+                            domains.slice(0, 2).forEach(domain => {
+                                message += `• ${domain}\n`;
+                            });
+                            message += "\n";
+                        }
+                    });
+
+                    // Category: Creative/Interests (if we have interests)
+                    if (userInfo.interests && userInfo.interests.length > 0) {
+                        message += "**Creative Options:**\n";
+                        const interest = userInfo.interests[0].toLowerCase();
+                        const shortInterest = interest.slice(0, 4);
+                        message += `• ${userInfo.normalizedName}${interest}.${userInfo.tlds[0].replace('.', '')}\n`;
+                        message += `• ${shortInterest}${userInfo.normalizedName}.io\n`;
+                        message += "\n";
+                    }
+
+                    setMessages(prev => [...prev, { text: message, sender: 'bot' }]);
+                    setIsTyping(false);
+                    
+                    // Add follow-up question after a pause
+                    setTimeout(() => {
+                        addBotMessage("Do any of these feel just right? Or would you like me to explore some different directions?", 800);
+                    }, 1200);
+                }, 1000);
+            };
+
+            return (
+                <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
+                  <div className="w-full max-w-6xl">
+                    <div className="flex gap-6">
+                      {/* Main Chat */}
+                      <div className="flex-1 bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col" style={{ height: '80vh' }}>
+                        {/* Header */}
+                        <div className="gradient-bg text-white p-6">
+                          <h1 className="text-2xl font-bold">Posty</h1>
+                          <p className="text-purple-100 text-sm">Let's find your perfect email domain</p>
+                        </div>
+
+                        {/* Messages */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                          {messages.map((msg, idx) => (
+                            <div key={idx} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'} message-enter`}>
+                              <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                                msg.sender === 'user' 
+                                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white' 
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                <p className="whitespace-pre-line">{msg.text}</p>
+                              </div>
+                            </div>
+                          ))}
+                          
+                          {isTyping && (
+                            <div className="flex justify-start">
+                              <div className="bg-gray-100 rounded-2xl px-4 py-3">
+                                <div className="typing-indicator flex gap-1">
+                                  <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
+                                  <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
+                                  <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div ref={messagesEndRef} />
+                        </div>
+
+                        {/* Input */}
+                        <div className="border-t p-4 bg-gray-50">
+                          <form onSubmit={handleSubmit} className="flex gap-3">
+                            <input
+                              ref={inputRef}
+                              type="text"
+                              value={inputValue}
+                              onChange={(e) => setInputValue(e.target.value)}
+                              placeholder="Type your answer..."
+                              disabled={isTyping}
+                              className="flex-1 px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                            />
+                            
+                            {recognition && (
+                              <button
+                                type="button"
+                                onClick={toggleVoiceInput}
+                                disabled={isTyping}
+                                className={`px-4 py-3 rounded-xl transition-all ${
+                                  isListening 
+                                    ? 'bg-red-500 text-white' 
+                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                } disabled:opacity-50`}
+                              >
+                                {isListening ? (
+                                  <div className="voice-wave">
+                                    <div className="voice-bar"></div>
+                                    <div className="voice-bar"></div>
+                                    <div className="voice-bar"></div>
+                                    <div className="voice-bar"></div>
+                                    <div className="voice-bar"></div>
+                                  </div>
+                                ) : (
+                                  <span>🎤</span>
+                                )}
+                              </button>
+                            )}
+                            
+                            <button
+                              type="submit"
+                              disabled={isTyping || !inputValue.trim()}
+                              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-md transform hover:scale-[1.02]"
+                            >
+                              Send
+                            </button>
+                          </form>
+                        </div>
+                      </div>
+
+                      {/* Right Sidebar */}
+                      <div className="w-80 space-y-6">
+                        {/* Captured Info */}
+                        <div className="bg-white rounded-2xl shadow-xl p-6">
+                          <CapturedInfoSidebar userInfo={userInfo} />
+                        </div>
+                        
+                        {/* Posty Info */}
+                        <div className="bg-white rounded-2xl shadow-xl p-6">
+                          <InfoSidebar />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<PostyChatbot />, document.getElementById('root'));
+    </script>
+</body>
+</html>

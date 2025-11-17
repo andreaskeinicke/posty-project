@@ -515,7 +515,22 @@ class MockClaudeService {
 
     // Build final suggestions output
     if (categories.length === 0) {
-      return `I checked many options, but unfortunately most are taken. Let me suggest some alternative approaches:\n\n• Try different TLDs (.app, .xyz, .club)\n• Consider adding a word (hey${firstName}.com, ${firstName}mail.com)\n• Use your full name (${firstName}${lastName}.com)\n\nWould you like me to explore these alternatives?`;
+      // Generate creative alternatives when standard options are taken
+      const alternatives = [];
+
+      // Add descriptive words
+      ['hey', 'hi', 'meet', 'email', 'mail', 'contact'].forEach(word => {
+        alternatives.push(`${firstName}@${word}${firstName}.com`);
+        alternatives.push(`${firstName}@${firstName}${word}.com`);
+      });
+
+      // Try full name combinations
+      if (lastName) {
+        alternatives.push(`${firstName}@${firstName}${lastName}.com`);
+        alternatives.push(`${lastName}@${firstName}${lastName}.com`);
+      }
+
+      return `Here are some creative alternatives using different TLDs and word combinations:\n\n${alternatives.slice(0, 6).map(alt => `• ${alt}`).join('\n')}\n\nWould you like me to check availability on any of these, or explore other directions?`;
     }
 
     let suggestions = `Great news! Here are available domains you can register:\n\n`;

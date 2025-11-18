@@ -1,10 +1,13 @@
 const dns = require('dns').promises;
 const whois = require('whois-json');
 const NodeCache = require('node-cache');
+const cloudflareService = require('./cloudflareService');
 
 /**
  * Domain Availability Checker Service
- * Uses DNS + WHOIS for accurate availability checking
+ * Primary: Cloudflare Registrar API (FREE, accurate, includes pricing)
+ * Fallback: DNS + WHOIS (when Cloudflare is not configured)
+ *
  * Implements caching to avoid rate limits
  */
 class DomainAvailabilityService {
@@ -12,6 +15,14 @@ class DomainAvailabilityService {
     // Cache results for 24 hours (86400 seconds)
     this.cache = new NodeCache({ stdTTL: 86400, checkperiod: 600 });
     this.checkInProgress = new Map(); // Prevent duplicate simultaneous checks
+
+    // Log which service is configured
+    if (cloudflareService.isReady()) {
+      console.log('✓ Domain checking: Using Cloudflare Registrar API (FREE)');
+    } else {
+      console.log('⚠️  Domain checking: Using DNS/WHOIS fallback');
+      console.log('   Configure Cloudflare for better accuracy and pricing data');
+    }
   }
 
   /**
@@ -63,6 +74,20 @@ class DomainAvailabilityService {
     };
 
     try {
+      // Try Cloudflare first (if configured)
+      if (cloudflareService.isReady()) {
+        try {
+          const cloudflareResult = await cloudflareService.checkDomain(domain);
+          console.log(`✓ ${domain}: ${cloudflareResult.status} (cloudflare)`);
+          return cloudflareResult;
+        } catch (cloudflareError) {
+          console.warn(`Cloudflare check failed for ${domain}, falling back to DNS/WHOIS`);
+          console.warn(`Error: ${cloudflareError.message}`);
+          // Continue to fallback methods below
+        }
+      }
+
+      // Fallback: DNS + WHOIS check
       // Step 1: Quick DNS check
       const dnsAvailable = await this._checkDNS(domain);
 

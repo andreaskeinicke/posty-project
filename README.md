@@ -25,6 +25,16 @@ Posty is an AI-powered chatbot that helps people find the perfect custom email d
 - **Results Display**: Beautiful presentation of domain suggestions
 - **Responsive Design**: Works on desktop and mobile
 
+## Architecture Decisions
+
+Key decisions about our infrastructure and technology choices:
+
+- **[Why Cloudflare?](docs/WHY_CLOUDFLARE.md)** - Quick summary of our infrastructure choice
+- **[Cloudflare Decision Document](docs/architecture/CLOUDFLARE_DECISION.md)** - Full analysis of why we chose Cloudflare for domain registration and email routing
+- **[Cloudflare Setup Guide](docs/CLOUDFLARE_SETUP.md)** - Step-by-step guide to configure Cloudflare API (5 minutes)
+
+These documents explain our choice of Cloudflare as our all-in-one provider for domain registration, FREE email routing, and DNS management - saving us 80%+ on infrastructure costs while providing superior developer experience.
+
 ## Project Structure
 
 ```

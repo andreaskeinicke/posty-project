@@ -15,7 +15,11 @@ app.use(cors({
   credentials: true
 }));
 
-// Body parser
+// Stripe webhook route needs raw body
+// Must be registered BEFORE express.json()
+app.use('/api/checkout/webhook', express.raw({ type: 'application/json' }));
+
+// Body parser for all other routes
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -31,6 +35,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/chat', require('./routes/chat'));
 app.use('/api/domains', require('./routes/domains'));
 app.use('/api/questionnaire', require('./routes/questionnaire'));
+app.use('/api/checkout', require('./routes/checkout'));
 
 // Health check
 app.get('/health', (req, res) => {

@@ -129,10 +129,38 @@ function App() {
     }
   };
 
-  const handleCheckout = (domain) => {
-    // TODO: Implement checkout flow with Stripe
-    console.log('Proceeding to checkout for:', domain);
-    addBotMessage(`Great choice! Setting up checkout for ${domain}...`);
+  const handleCheckout = async (domain) => {
+    try {
+      addBotMessage(`Great choice! Setting up checkout for ${domain}...`);
+
+      const accessToken = localStorage.getItem('accessToken');
+
+      // Call backend to create Stripe checkout session
+      const response = await axios.post(
+        `${API_BASE_URL}/api/checkout/create-session`,
+        {
+          domainName: domain,
+          domainPrice: 12, // TODO: Get actual domain price from availability check
+          sessionId: sessionId
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data.success && response.data.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = response.data.url;
+      } else {
+        addBotMessage('Sorry, there was an issue setting up checkout. Please try again.');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      addBotMessage('Sorry, there was an error processing your checkout. Please try again or contact support.');
+    }
   };
 
   const handleSignupSuccess = (user, accessToken) => {

@@ -6,7 +6,7 @@ class ClaudeService {
     this.client = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY
     });
-    this.model = 'claude-3-5-sonnet-20241022';
+    this.model = 'claude-3-haiku-20240307'; // Free tier compatible model
 
     // Session storage for conversation state
     this.sessions = new Map();

@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-require('dotenv').config();
+require('dotenv').config({ override: true }); // Force override environment variables
 
 const app = express();
 
@@ -27,6 +27,7 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // Routes
+app.use('/api/auth', require('./routes/auth'));
 app.use('/api/chat', require('./routes/chat'));
 app.use('/api/domains', require('./routes/domains'));
 app.use('/api/questionnaire', require('./routes/questionnaire'));

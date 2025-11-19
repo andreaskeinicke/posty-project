@@ -1,12 +1,18 @@
 const claudeService = require('../services/claudeService');
 const mockClaudeService = require('../services/mockClaudeService');
 
+// Debug: Log environment variables
+console.log('🔧 DEBUG - MOCK_MODE:', process.env.MOCK_MODE);
+console.log('🔧 DEBUG - Has API Key:', !!process.env.ANTHROPIC_API_KEY);
+
 // Use mock service if MOCK_MODE is enabled or if API key is missing
 const USE_MOCK = process.env.MOCK_MODE === 'true' || !process.env.ANTHROPIC_API_KEY;
 const activeService = USE_MOCK ? mockClaudeService : claudeService;
 
 if (USE_MOCK) {
   console.log('🎭 Running in MOCK MODE - no API calls will be made');
+} else {
+  console.log('🧠 Running with REAL Claude API');
 }
 
 // In-memory session storage (in production, use Redis or similar)

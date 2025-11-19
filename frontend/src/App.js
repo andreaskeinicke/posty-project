@@ -28,6 +28,7 @@ function App() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [user, setUser] = useState(null);
   const [selectedDomain, setSelectedDomain] = useState(null);
+  const [domainPrices, setDomainPrices] = useState({}); // Store domain -> price mapping
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -115,17 +116,43 @@ function App() {
     }
   };
 
-  const handleDomainSelection = (domain) => {
+  const handleDomainSelection = async (domain) => {
     setSelectedDomain(domain);
 
-    // Check if user is logged in
-    const accessToken = localStorage.getItem('accessToken');
-    if (accessToken && user) {
-      // User is logged in, proceed to checkout
-      handleCheckout(domain);
-    } else {
-      // Show signup modal
-      setShowSignupModal(true);
+    // Check domain availability and get price
+    try {
+      addBotMessage(`Checking ${domain}...`);
+
+      const availabilityResponse = await axios.post(
+        `${API_BASE_URL}/api/domains/check`,
+        { domain }
+      );
+
+      if (availabilityResponse.data.available) {
+        const price = availabilityResponse.data.price || 12; // Fallback to $12
+
+        // Store the price for this domain
+        setDomainPrices(prev => ({ ...prev, [domain]: price }));
+
+        addBotMessage(`Great news! ${domain} is available for $${price}/year.`);
+
+        // Check if user is logged in
+        const accessToken = localStorage.getItem('accessToken');
+        if (accessToken && user) {
+          // User is logged in, proceed to checkout
+          handleCheckout(domain);
+        } else {
+          // Show signup modal
+          setShowSignupModal(true);
+        }
+      } else {
+        addBotMessage(`Sorry, ${domain} is already taken. Would you like to see other suggestions?`);
+        setSelectedDomain(null);
+      }
+    } catch (error) {
+      console.error('Error checking domain:', error);
+      addBotMessage(`There was an error checking ${domain}. Please try another domain.`);
+      setSelectedDomain(null);
     }
   };
 
@@ -135,12 +162,15 @@ function App() {
 
       const accessToken = localStorage.getItem('accessToken');
 
+      // Get the actual price for this domain (or fallback to $12)
+      const domainPrice = domainPrices[domain] || 12;
+
       // Call backend to create Stripe checkout session
       const response = await axios.post(
         `${API_BASE_URL}/api/checkout/create-session`,
         {
           domainName: domain,
-          domainPrice: 12, // TODO: Get actual domain price from availability check
+          domainPrice: domainPrice,
           sessionId: sessionId
         },
         {

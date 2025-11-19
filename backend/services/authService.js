@@ -190,7 +190,7 @@ class AuthService {
         .from('questionnaire_sessions')
         .update({
           user_id: userId,
-          updated_at: new Date().toISOString()
+          last_activity: new Date().toISOString()
         })
         .eq('session_id', sessionId)
         .select()

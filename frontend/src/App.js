@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import axios from 'axios';
+import SignupForm from './components/Auth/SignupForm';
+import LoginForm from './components/Auth/LoginForm';
 
 // Configure axios base URL
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
@@ -22,6 +24,10 @@ function App() {
   const [recognition, setRecognition] = useState(null);
   const [sessionId] = useState(() => Math.random().toString(36).substring(7));
   const [buttonOptions, setButtonOptions] = useState(null);
+  const [showSignupModal, setShowSignupModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [user, setUser] = useState(null);
+  const [selectedDomain, setSelectedDomain] = useState(null);
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -109,8 +115,47 @@ function App() {
     }
   };
 
+  const handleDomainSelection = (domain) => {
+    setSelectedDomain(domain);
+
+    // Check if user is logged in
+    const accessToken = localStorage.getItem('accessToken');
+    if (accessToken && user) {
+      // User is logged in, proceed to checkout
+      handleCheckout(domain);
+    } else {
+      // Show signup modal
+      setShowSignupModal(true);
+    }
+  };
+
+  const handleCheckout = (domain) => {
+    // TODO: Implement checkout flow with Stripe
+    console.log('Proceeding to checkout for:', domain);
+    addBotMessage(`Great choice! Setting up checkout for ${domain}...`);
+  };
+
+  const handleSignupSuccess = (user, accessToken) => {
+    setUser(user);
+    setShowSignupModal(false);
+
+    // Proceed to checkout with selected domain
+    if (selectedDomain) {
+      handleCheckout(selectedDomain);
+    } else {
+      addBotMessage(`Welcome aboard, ${user.firstName}! Your account is all set up. Continue chatting to find your perfect domain.`);
+    }
+  };
+
   const handleButtonClick = async (optionValue, optionLabel) => {
     if (isTyping) return;
+
+    // Check if this is a domain selection button
+    if (optionValue.includes('.')) {
+      // Looks like a domain name
+      handleDomainSelection(optionValue);
+      return;
+    }
 
     // Add user message showing what they selected
     addUserMessage(optionLabel);
@@ -313,6 +358,54 @@ function App() {
           </div>
         </div>
       </div>
+
+      {/* Signup Modal */}
+      {showSignupModal && (
+        <div className="modal-overlay" onClick={() => setShowSignupModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Create Your Account</h2>
+              <button className="modal-close" onClick={() => setShowSignupModal(false)}>×</button>
+            </div>
+            <SignupForm
+              sessionId={sessionId}
+              selectedDomain={selectedDomain}
+              onSuccess={handleSignupSuccess}
+              onSwitchToLogin={() => {
+                setShowSignupModal(false);
+                setShowLoginModal(true);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Login Modal */}
+      {showLoginModal && (
+        <div className="modal-overlay" onClick={() => setShowLoginModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Welcome Back</h2>
+              <button className="modal-close" onClick={() => setShowLoginModal(false)}>×</button>
+            </div>
+            <LoginForm
+              onSuccess={(user, accessToken) => {
+                setUser(user);
+                setShowLoginModal(false);
+                if (selectedDomain) {
+                  handleCheckout(selectedDomain);
+                } else {
+                  addBotMessage(`Welcome back, ${user.firstName}!`);
+                }
+              }}
+              onSwitchToSignup={() => {
+                setShowLoginModal(false);
+                setShowSignupModal(true);
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

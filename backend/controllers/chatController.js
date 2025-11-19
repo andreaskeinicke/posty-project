@@ -1,5 +1,6 @@
 const claudeService = require('../services/claudeService');
 const mockClaudeService = require('../services/mockClaudeService');
+const { supabase, supabaseAdmin } = require('../config/supabase');
 
 // Debug: Log environment variables
 console.log('🔧 DEBUG - MOCK_MODE:', process.env.MOCK_MODE);
@@ -14,9 +15,6 @@ if (USE_MOCK) {
 } else {
   console.log('🧠 Running with REAL Claude API');
 }
-
-// In-memory session storage (in production, use Redis or similar)
-const sessions = new Map();
 
 // System prompt for Posty conversation
 const SYSTEM_PROMPT = `You are Posty, an AI assistant that helps people find perfect email domain names.
@@ -58,39 +56,93 @@ After showing suggestions, ask: "Do any of these feel just right? Or would you l
 Be helpful in guiding them to choose or explore more options.`;
 
 /**
- * Get or create session
+ * Get or create session from Supabase
  */
-function getSession(sessionId) {
-  if (!sessions.has(sessionId)) {
-    sessions.set(sessionId, {
-      id: sessionId,
-      messages: [],
-      userInfo: {
-        fullName: '',
-        firstName: '',
-        middleName: '',
-        lastName: '',
-        preferredName: '',
-        normalizedName: '',
-        country: '',
-        city: '',
-        state: '',
-        cityAbbreviation: null,
-        locationString: '',
-        tlds: [],
-        professions: [],
-        interests: [],
-        handles: []
-      },
-      stage: 'welcome', // welcome, location, profession, interests, review
-      createdAt: new Date(),
-      lastActivity: new Date()
-    });
-  }
+async function getSession(sessionId, userId = null) {
+  try {
+    // First, try to fetch existing session from database
+    const { data: existingSession, error: fetchError } = await supabaseAdmin
+      .from('questionnaire_sessions')
+      .select('*')
+      .eq('session_id', sessionId)
+      .single();
 
-  const session = sessions.get(sessionId);
-  session.lastActivity = new Date();
-  return session;
+    if (existingSession && !fetchError) {
+      // Session exists, update last_activity and return
+      const { error: updateError } = await supabaseAdmin
+        .from('questionnaire_sessions')
+        .update({ last_activity: new Date().toISOString() })
+        .eq('session_id', sessionId);
+
+      if (updateError) {
+        console.error('Error updating session last_activity:', updateError);
+      }
+
+      return existingSession;
+    }
+
+    // Session doesn't exist, create new one
+    const newSession = {
+      session_id: sessionId,
+      user_id: userId,
+      messages: [],
+      full_name: null,
+      first_name: null,
+      last_name: null,
+      location: null,
+      professions: [],
+      interests: [],
+      stage: 'welcome',
+      recommended_domains: [],
+      selected_domain: null,
+      converted: false,
+      created_at: new Date().toISOString(),
+      last_activity: new Date().toISOString()
+    };
+
+    const { data: createdSession, error: createError } = await supabaseAdmin
+      .from('questionnaire_sessions')
+      .insert([newSession])
+      .select()
+      .single();
+
+    if (createError) {
+      console.error('Error creating session:', createError);
+      throw new Error('Failed to create session');
+    }
+
+    return createdSession;
+  } catch (error) {
+    console.error('Error in getSession:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update session in Supabase
+ */
+async function updateSession(sessionId, updates) {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('questionnaire_sessions')
+      .update({
+        ...updates,
+        last_activity: new Date().toISOString()
+      })
+      .eq('session_id', sessionId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating session:', error);
+      throw new Error('Failed to update session');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error in updateSession:', error);
+    throw error;
+  }
 }
 
 /**
@@ -106,18 +158,18 @@ exports.sendMessage = async (req, res) => {
       });
     }
 
-    // Get or create session
-    const session = getSession(sessionId);
+    // Get or create session from Supabase
+    const session = await getSession(sessionId);
 
     // Add user message to session
-    session.messages.push({
+    const updatedMessages = [...(session.messages || []), {
       role: 'user',
       content: message
-    });
+    }];
 
     // Call Claude API (or mock) with system prompt and conversation history
     const response = await activeService.sendMessage(
-      session.messages,
+      updatedMessages,
       {
         system: SYSTEM_PROMPT,
         max_tokens: 1024,
@@ -132,24 +184,47 @@ exports.sendMessage = async (req, res) => {
       });
     }
 
-    // Add assistant response to session
-    session.messages.push({
+    // Add assistant response to messages
+    updatedMessages.push({
       role: 'assistant',
       content: response.message
     });
 
     // Extract user info from the conversation using patterns
-    const userInfo = extractUserInfo(message, session);
+    const extractedInfo = extractUserInfo(message, session);
 
-    // Update session with extracted info
-    if (userInfo) {
-      Object.assign(session.userInfo, userInfo);
+    // Prepare update object for database
+    const sessionUpdates = {
+      messages: updatedMessages,
+      stage: extractedInfo?.stage || session.stage
+    };
+
+    // Add extracted fields if they exist
+    if (extractedInfo?.userInfo) {
+      if (extractedInfo.userInfo.fullName) sessionUpdates.full_name = extractedInfo.userInfo.fullName;
+      if (extractedInfo.userInfo.firstName) sessionUpdates.first_name = extractedInfo.userInfo.firstName;
+      if (extractedInfo.userInfo.lastName) sessionUpdates.last_name = extractedInfo.userInfo.lastName;
+      if (extractedInfo.userInfo.locationString) sessionUpdates.location = extractedInfo.userInfo.locationString;
+      if (extractedInfo.userInfo.professions) sessionUpdates.professions = extractedInfo.userInfo.professions;
+      if (extractedInfo.userInfo.interests) sessionUpdates.interests = extractedInfo.userInfo.interests;
     }
 
-    // Return response
+    // Update session in Supabase
+    const updatedSession = await updateSession(sessionId, sessionUpdates);
+
+    // Return response with combined userInfo for backwards compatibility with frontend
+    const userInfo = {
+      fullName: updatedSession.full_name || '',
+      firstName: updatedSession.first_name || '',
+      lastName: updatedSession.last_name || '',
+      location: updatedSession.location || '',
+      professions: updatedSession.professions || [],
+      interests: updatedSession.interests || []
+    };
+
     res.json({
       reply: response.message,
-      userInfo: session.userInfo,
+      userInfo,
       options: response.options, // Pass through button options from mock service
       usage: response.usage
     });
@@ -168,10 +243,10 @@ exports.sendMessage = async (req, res) => {
  */
 function extractUserInfo(message, session) {
   const updates = {};
-  const stage = session.stage;
+  let newStage = session.stage;
 
   // Simple pattern matching (in a real implementation, Claude could extract this)
-  if (stage === 'welcome' && message.trim().split(' ').length >= 2) {
+  if (newStage === 'welcome' && message.trim().split(' ').length >= 2) {
     // Likely a name
     const nameParts = message.trim().split(/\s+/);
     if (nameParts.length === 2) {
@@ -186,8 +261,8 @@ function extractUserInfo(message, session) {
     }
     updates.preferredName = updates.firstName?.toLowerCase() || '';
     updates.normalizedName = normalizeName(updates.firstName || '');
-    session.stage = 'location';
-  } else if (stage === 'location') {
+    newStage = 'location';
+  } else if (newStage === 'location') {
     // Extract location
     const locationParts = message.split(',').map(s => s.trim());
     if (locationParts.length >= 2) {
@@ -201,22 +276,22 @@ function extractUserInfo(message, session) {
                    updates.country.toLowerCase() === 'us';
 
       if (!isUS) {
-        session.stage = 'profession';
+        newStage = 'profession';
       }
     } else if (locationParts.length === 1) {
       updates.country = locationParts[0];
       updates.locationString = message.trim();
-      session.stage = 'profession';
+      newStage = 'profession';
     }
-  } else if (stage === 'profession') {
+  } else if (newStage === 'profession') {
     // Extract professions
     const professions = message
       .split(/,|\band\b/i)
       .map(p => p.trim())
       .filter(p => p.length > 0);
     updates.professions = professions;
-    session.stage = 'interests';
-  } else if (stage === 'interests') {
+    newStage = 'interests';
+  } else if (newStage === 'interests') {
     // Extract interests
     if (message.toLowerCase() !== 'skip' && message.toLowerCase() !== 'none') {
       const interests = message
@@ -225,10 +300,13 @@ function extractUserInfo(message, session) {
         .filter(i => i.length > 0);
       updates.interests = interests;
     }
-    session.stage = 'review';
+    newStage = 'review';
   }
 
-  return Object.keys(updates).length > 0 ? updates : null;
+  return {
+    userInfo: Object.keys(updates).length > 0 ? updates : null,
+    stage: newStage
+  };
 }
 
 /**
@@ -292,13 +370,3 @@ exports.streamMessage = async (req, res) => {
     });
   }
 };
-
-// Clean up old sessions periodically (older than 1 hour)
-setInterval(() => {
-  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-  for (const [sessionId, session] of sessions.entries()) {
-    if (session.lastActivity < oneHourAgo) {
-      sessions.delete(sessionId);
-    }
-  }
-}, 15 * 60 * 1000); // Every 15 minutes

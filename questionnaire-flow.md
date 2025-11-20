@@ -147,32 +147,37 @@ A clean, step-by-step questionnaire flow (4-6 questions) that guides users to th
 
 ---
 
-### Question 5: **Profession** (Text Input - CONDITIONAL)
+### Question 5: **Profession/Business** (Text Input - CONDITIONAL)
 
 **Condition:** ONLY show if Question 3 answer = "Work" OR "Side hustle"
 
 **Question Text:**
-"What's your profession or industry?"
+- If "Work" selected: "What's the name of your business or company?"
+- If "Side hustle" selected: "What's your profession or industry?"
 
 **Type:** `text`
 
-**Placeholder:** "e.g., Software Developer, Marketing Consultant, Graphic Designer"
+**Placeholder:**
+- For "Work": "e.g., Acme Corp, Jensen & Partners, Bright Ideas Studio"
+- For "Side hustle": "e.g., Software Developer, Marketing Consultant, Graphic Designer"
 
 **Validation:**
 - Required (when shown)
 - Minimum 2 characters
 
 **Processing:**
-- Split multiple professions if user lists them:
+- If "Work": Store as business name for business-specific domain suggestions
+- If "Side hustle": Split multiple professions if user lists them:
   - "founder and consultant" → ["founder", "consultant"]
   - "developer, designer" → ["developer", "designer"]
 - Normalize capitalization
 - Each profession gets its own domain category in recommendations
 
 **Purpose:**
-- Generate profession-specific domain suggestions
-- Create targeted recommendations per profession
-- Examples: "andreasfounder.dk", "andreasconsult.io"
+- **Work**: Generate business-branded email addresses for company use
+- **Side hustle**: Generate profession-specific domain suggestions
+- Create targeted recommendations per profession/business
+- Examples: "andreas@acmecorp.dk", "andreasfounder.dk", "andreasconsult.io"
 
 **Note:** Each profession generates separate suggestions - they are NOT combined
 
@@ -277,6 +282,10 @@ A clean, step-by-step questionnaire flow (4-6 questions) that guides users to th
   tlds: [".dk", ".eu", ".me"],
 
   // Question 5 (conditional)
+  // If primaryUseCase = "work":
+  businessName: "Acme Corp",
+
+  // If primaryUseCase = "side_hustle":
   profession: "founder, consultant",
   professions: ["founder", "consultant"], // Parsed array
 
@@ -299,11 +308,17 @@ A clean, step-by-step questionnaire flow (4-6 questions) that guides users to th
 
 **Handoff Point:** After final question submission
 
+**IMPORTANT:** All domain suggestions must be presented as **complete email addresses**, not just domains.
+- Format: `yourname@domain.ext`
+- Example: `andreas@ak.io`, `contact@acmecorp.dk`, `hello@andreascph.me`
+- This helps users immediately visualize their actual email address
+
 **Process:**
 1. Collect all answers
 2. If domainPreference = "specific_domain":
    - Check domain availability via Cloudflare
    - Return availability status
+   - Present as email address format
 3. If domainPreference = "help_find":
    - Pass data to recommendation engine
    - Generate suggestions across all 10 categories:
@@ -311,16 +326,18 @@ A clean, step-by-step questionnaire flow (4-6 questions) that guides users to th
      2. City-based
      3. Interest-based
      4. Profession-based (per profession)
-     5. Creative AI-powered
-   - Return categorized suggestions
+     5. Business-based (if "Work" selected)
+     6. Creative AI-powered
+   - Return categorized suggestions **as email addresses**
 
 **Recommendation Categories Used:**
-- Your Name (ultra-short handles)
-- Your Location (city-based)
-- Personal Brand (name variations)
-- Professional Identity (profession-specific)
-- Creative/Interest-based (hobby domains)
-- AI Magic Moments (researched entities)
+- Your Name (ultra-short handles) → `you@ak.io`
+- Your Location (city-based) → `andreas@cph.dk`
+- Personal Brand (name variations) → `hello@andreas.me`
+- Professional Identity (profession-specific) → `contact@andreasfounder.dk`
+- Business Identity (if "Work" selected) → `andreas@acmecorp.dk`, `contact@acmecorp.dk`
+- Creative/Interest-based (hobby domains) → `hello@andreasski.me`
+- AI Magic Moments (researched entities) → Creative email addresses
 
 ---
 

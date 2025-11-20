@@ -1,4 +1,7 @@
 const claudeService = require('./claudeService');
+const emailGenerator = require('./emailGenerator');
+const domainRecommendationEngine = require('./domainRecommendationEngine');
+const domainService = require('./domainService');
 
 class QuestionnaireService {
   /**
@@ -7,159 +10,38 @@ class QuestionnaireService {
    */
   getQuestionnaireFlow() {
     return {
-      version: '1.0',
+      version: '2.0',
       sections: [
         {
-          id: 'identity',
-          title: 'About You',
-          description: 'Tell us about yourself or your business',
+          id: 'basics',
+          title: 'Let\'s Find Your Perfect Email',
+          description: 'Just a few quick questions',
           questions: [
-            {
-              id: 'type',
-              type: 'choice',
-              question: 'What are you looking for?',
-              options: [
-                { value: 'personal', label: 'Personal email domain' },
-                { value: 'business', label: 'Business email domain' },
-                { value: 'professional', label: 'Professional/freelancer domain' },
-                { value: 'project', label: 'Project or side hustle domain' }
-              ],
-              required: true
-            },
             {
               id: 'name',
               type: 'text',
-              question: 'What\'s your name or business name?',
-              placeholder: 'e.g., John Smith or Acme Corp',
-              required: true
-            },
-            {
-              id: 'profession',
-              type: 'text',
-              question: 'What do you do? (profession, industry, or field)',
-              placeholder: 'e.g., software developer, photographer, consultant',
-              required: true,
-              conditional: {
-                field: 'type',
-                values: ['personal', 'professional', 'business']
-              }
-            }
-          ]
-        },
-        {
-          id: 'identity_deep',
-          title: 'Your Unique Identity',
-          description: 'Help us understand what makes you unique',
-          questions: [
-            {
-              id: 'values',
-              type: 'textarea',
-              question: 'What are your core values or what does your business stand for?',
-              placeholder: 'e.g., innovation, sustainability, creativity, reliability',
-              required: false
-            },
-            {
-              id: 'specialty',
-              type: 'text',
-              question: 'What\'s your specialty or niche?',
-              placeholder: 'e.g., wedding photography, cloud architecture, organic farming',
-              required: false
-            },
-            {
-              id: 'keywords',
-              type: 'tags',
-              question: 'List keywords that represent you or your business',
-              placeholder: 'Add keywords (press Enter after each)',
-              required: false,
-              hint: 'Think about: skills, qualities, services, products'
-            }
-          ]
-        },
-        {
-          id: 'preferences',
-          title: 'Domain Preferences',
-          description: 'Your domain name preferences',
-          questions: [
-            {
-              id: 'length',
-              type: 'choice',
-              question: 'What domain length do you prefer?',
-              options: [
-                { value: 'short', label: 'Short (5-10 characters) - e.g., acme.co' },
-                { value: 'medium', label: 'Medium (11-15 characters) - e.g., acmecorp.com' },
-                { value: 'long', label: 'Longer is fine (16+ characters)' },
-                { value: 'any', label: 'No preference' }
-              ],
-              required: true
-            },
-            {
-              id: 'style',
-              type: 'multi-choice',
-              question: 'What style appeals to you? (Select all that apply)',
-              options: [
-                { value: 'professional', label: 'Professional & corporate' },
-                { value: 'creative', label: 'Creative & playful' },
-                { value: 'modern', label: 'Modern & tech-forward' },
-                { value: 'traditional', label: 'Traditional & established' },
-                { value: 'minimal', label: 'Minimal & clean' }
-              ],
-              required: false
-            },
-            {
-              id: 'include_name',
-              type: 'boolean',
-              question: 'Should the domain include your name?',
+              question: 'What\'s your full name?',
+              placeholder: 'e.g., Andreas Keinicke',
               required: true
             },
             {
               id: 'tld_preference',
               type: 'multi-choice',
-              question: 'Preferred domain extensions (TLDs)?',
+              question: 'Which domain extensions do you prefer?',
               options: [
-                { value: 'com', label: '.com - Most popular' },
-                { value: 'net', label: '.net - Network/tech' },
-                { value: 'io', label: '.io - Tech startups' },
-                { value: 'co', label: '.co - Company' },
-                { value: 'app', label: '.app - Applications' },
-                { value: 'email', label: '.email - Email specific' },
-                { value: 'any', label: 'Open to suggestions' }
+                { value: 'com', label: '.com' },
+                { value: 'io', label: '.io' },
+                { value: 'co', label: '.co' },
+                { value: 'email', label: '.email' },
+                { value: 'me', label: '.me' }
               ],
               required: true
-            }
-          ]
-        },
-        {
-          id: 'inspiration',
-          title: 'Creative Inspiration',
-          description: 'Help us think creatively',
-          questions: [
-            {
-              id: 'brands_admire',
-              type: 'text',
-              question: 'Name a brand or domain you admire (optional)',
-              placeholder: 'e.g., stripe.com, airbnb.com',
-              required: false,
-              hint: 'This helps us understand your aesthetic preferences'
-            },
-            {
-              id: 'avoid',
-              type: 'textarea',
-              question: 'Anything to avoid in the domain?',
-              placeholder: 'e.g., hyphens, numbers, certain words',
-              required: false
-            },
-            {
-              id: 'special_meaning',
-              type: 'textarea',
-              question: 'Any words, concepts, or meanings that are special to you?',
-              placeholder: 'e.g., family heritage, favorite concepts, meaningful places',
-              required: false
             }
           ]
         }
       ],
       completion: {
-        message: 'Great! I have everything I need to suggest some perfect domains for you.',
+        message: 'Perfect! Let\'s find your available email addresses.',
         action: 'generate_suggestions'
       }
     };
@@ -188,24 +70,104 @@ class QuestionnaireService {
         admireBrands: responses.brands_admire || '',
         avoid: responses.avoid || '',
         specialMeaning: responses.special_meaning || ''
-      }
+      },
+      // Preserve _metadata from frontend for recommendation engine
+      _metadata: responses._metadata || {}
     };
+
+    // If _metadata exists, ensure TLDs are in the right format for the engine
+    if (profile._metadata) {
+      // Use TLDs from preferences if not in _metadata
+      if (!profile._metadata.tlds || profile._metadata.tlds.length === 0) {
+        profile._metadata.tlds = profile.preferences.tlds.map(tld =>
+          tld.startsWith('.') ? tld : `.${tld}`
+        );
+      } else {
+        // Convert TLDs to have dots: ['dk', 'eu'] -> ['.dk', '.eu']
+        profile._metadata.tlds = profile._metadata.tlds.map(tld =>
+          tld.startsWith('.') ? tld : `.${tld}`
+        );
+      }
+    }
 
     return profile;
   }
 
   /**
-   * Generate creative domain suggestions using Claude
+   * Generate email suggestions using 10-category recommendation engine
    * @param {Object} profile - User profile from questionnaire
-   * @returns {Promise<Object>} - Domain suggestions
+   * @returns {Promise<Object>} - Email suggestions with availability
    */
   async generateSuggestions(profile) {
     try {
-      const suggestions = await claudeService.analyzeDomainNeeds(profile);
+      console.log('🎯 Generating 10-category domain recommendations for:', profile.name);
+      console.log('📦 Profile data:', JSON.stringify(profile, null, 2));
+
+      // 1. Generate domains across all 10 categories
+      const allDomains = domainRecommendationEngine.generateRecommendations(profile);
+
+      console.log(`📧 Generated ${allDomains.length} domain suggestions across categories`);
+
+      // 2. Extract unique domains to check
+      const domainsToCheck = [...new Set(allDomains.map(d => d.domain))];
+
+      // 3. Check availability for ALL domains via Cloudflare
+      console.log(`🔍 Checking availability for ${domainsToCheck.length} domains...`);
+
+      const availabilityResults = await Promise.all(
+        domainsToCheck.map(async (domainName) => {
+          try {
+            const result = await domainService.checkAvailability(domainName);
+            return result;
+          } catch (error) {
+            console.error(`Error checking ${domainName}:`, error.message);
+            return { domain: domainName, available: false, price: 0 };
+          }
+        })
+      );
+
+      console.log(`✅ Checked ${availabilityResults.length} domains`);
+
+      // 4. Merge availability data with domain suggestions
+      const domainMap = {};
+      availabilityResults.forEach(d => {
+        domainMap[d.domain] = d;
+      });
+
+      const enrichedDomains = allDomains.map(domain => ({
+        ...domain,
+        available: domainMap[domain.domain]?.available || false,
+        price: domainMap[domain.domain]?.price || 0
+      }));
+
+      // 5. Separate available and unavailable
+      const availableDomains = enrichedDomains.filter(d => d.available);
+      const unavailableDomains = enrichedDomains.filter(d => !d.available);
+
+      console.log(`🎉 Found ${availableDomains.length} available domains`);
+
+      // 6. Group by category for structured response
+      const grouped = domainRecommendationEngine.groupByCategory(availableDomains);
+
       return {
         success: true,
         profile: profile,
-        suggestions: suggestions
+        suggestions: {
+          suggestions: availableDomains.map(domain => ({
+            email: `${profile.name.split(' ')[0].toLowerCase()}@${domain.domain}`,
+            domain: domain.domain,
+            category: domain.category,
+            priority: domain.priority,
+            price: domain.price,
+            available: domain.available,
+            rating: 5 - domain.priority, // Higher priority = higher rating
+            reasoning: domain.description,
+            pattern: domain.pattern || domain.domain // Include pattern for frontend
+          })),
+          grouped: grouped,
+          total: availableDomains.length,
+          unavailable: unavailableDomains.length
+        }
       };
     } catch (error) {
       console.error('Error generating suggestions:', error);

@@ -1,202 +1,103 @@
-# Stripe Setup Guide for Posty
+# Stripe Setup Guide
 
-## Overview
+This guide will walk you through setting up your Stripe product and configuring your Posty application for payments.
 
-Posty uses Stripe for payment processing. This guide will help you set up Stripe in **test mode** so you can test the complete checkout flow.
+## Step 1: Create Stripe Product
 
-## Step 1: Create a Stripe Account
+1. **Go to Stripe Dashboard**
+   - Visit: https://dashboard.stripe.com/test/products
+   - Make sure you're in **Test Mode** (toggle in top right)
 
-1. Go to [https://stripe.com](https://stripe.com)
-2. Click "Sign up"
-3. Complete the registration process
-4. **Stay in test mode** (toggle in the top right corner should say "Test mode")
+2. **Create Posty Product** (if you haven't already)
+   - Click **"+ Add Product"**
+   - **Product Information:**
+     - Name: `Posty`
+     - Description: `Custom domain email with Gmail integration`
+   - **Pricing:**
+     - Model: `Recurring`
+     - Price: `$5.00 USD`
+     - Billing Period: `Monthly`
+   - Click **"Save product"**
+   - **Copy the Price ID** (starts with `price_`) - you'll need this!
 
-## Step 2: Get Your API Keys
+## Step 2: Get Your Stripe API Keys
 
-1. Go to [https://dashboard.stripe.com/test/apikeys](https://dashboard.stripe.com/test/apikeys)
-2. You'll see two keys:
-   - **Publishable key** - starts with `pk_test_`
-   - **Secret key** - click "Reveal test key" to see it (starts with `sk_test_`)
+1. **Get Secret Key**
+   - Visit: https://dashboard.stripe.com/test/apikeys
+   - Copy the **"Secret key"** (starts with `sk_test_`)
+   - ⚠️ **Never commit this to git or share publicly!**
 
-### Update Backend .env
+2. **You already have:**
+   - Publishable key (in `frontend/.env`)
+   - Webhook secret (from `stripe listen` command)
 
-Edit `.env` in the project root:
+## Step 3: Configure Backend Environment
+
+Create a `.env` file in the root directory:
 
 ```bash
+# Copy from .env.example
+cp .env.example .env
+```
+
+Then edit `.env` and add your configuration (use the values you already have plus new Stripe price IDs):
+
+```bash
+# Server
+PORT=3001
+NODE_ENV=development
+
 # Stripe Configuration
 STRIPE_SECRET_KEY=sk_test_YOUR_SECRET_KEY_HERE
-STRIPE_PUBLISHABLE_KEY=pk_test_YOUR_PUBLISHABLE_KEY_HERE
-```
+STRIPE_WEBHOOK_SECRET=whsec_457e93c153b8079a9b1c064a77066fd9dcc7e23b79c13a8436464567f56aaf13
 
-### Update Frontend .env
-
-Edit `frontend/.env`:
-
-```bash
-# Stripe Configuration
-REACT_APP_STRIPE_PUBLISHABLE_KEY=pk_test_YOUR_PUBLISHABLE_KEY_HERE
-```
-
-## Step 3: Create a Product & Price
-
-1. Go to [https://dashboard.stripe.com/test/products](https://dashboard.stripe.com/test/products)
-2. Click **"Add product"**
-3. Fill in:
-   - **Name**: Posty Subscription
-   - **Description**: Monthly subscription for custom email domain
-   - **Pricing model**: Recurring
-   - **Price**: $5.00 USD
-   - **Billing period**: Monthly
-4. Click **"Save product"**
-5. **Copy the Price ID** - it looks like `price_1AbCdEfGhIjKlMnO`
-
-### Update Backend .env
-
-```bash
-# Stripe Pricing
+# Stripe Product Price ID (from Step 1)
 STRIPE_PRICE_ID=price_YOUR_PRICE_ID_HERE
+
+# Supabase
+SUPABASE_URL=https://noyrbkrsjlotxkbkwtep.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY_HERE
+
+# Frontend URL
+FRONTEND_URL=http://localhost:3000
+CORS_ORIGIN=http://localhost:3000
+
+# Cloudflare (if you have it configured)
+CLOUDFLARE_API_TOKEN=your_token_here
+CLOUDFLARE_ACCOUNT_ID=your_account_id_here
 ```
 
-## Step 4: Set Up Webhook (for local testing)
+## Step 4: Restart Your Backend Server
 
-### Option A: Use Stripe CLI (Recommended)
-
-1. Install Stripe CLI: [https://stripe.com/docs/stripe-cli](https://stripe.com/docs/stripe-cli)
+After updating `.env`, restart your backend:
 
 ```bash
-# macOS
-brew install stripe/stripe-cli/stripe
-
-# Or download directly from GitHub
+# Stop the backend (Ctrl+C)
+# Then restart:
+cd backend
+node server.js
 ```
 
-2. Login to Stripe CLI:
+## Step 5: Test the Complete Flow
 
-```bash
-stripe login
-```
-
-3. Forward webhooks to your local server:
-
-```bash
-stripe listen --forward-to localhost:3001/api/checkout/webhook
-```
-
-4. Copy the **webhook signing secret** from the output (starts with `whsec_`)
-
-5. Update backend `.env`:
-
-```bash
-STRIPE_WEBHOOK_SECRET=whsec_YOUR_WEBHOOK_SECRET_HERE
-```
-
-### Option B: Skip Webhooks (for initial testing)
-
-You can test the checkout flow without webhooks initially, but you won't see subscription/payment events in your database until webhooks are configured.
-
-## Step 5: Test the Integration
-
-### Start the servers:
-
-```bash
-# Terminal 1: Start backend
-npm run server
-
-# Terminal 2: Start frontend
-npm run client
-
-# Terminal 3 (if using webhooks): Forward webhooks
-stripe listen --forward-to localhost:3001/api/checkout/webhook
-```
-
-### Test the checkout flow:
-
-1. Go to http://localhost:3000
+1. Visit http://localhost:3000
 2. Complete the questionnaire
-3. Select a domain (or trigger checkout manually)
-4. Create an account (or login)
-5. You should be redirected to Stripe Checkout
+3. Choose a domain from suggestions
+4. Click "Get Started" on the Posty Plan
+5. Use Stripe test card:
+   - Card: `4242 4242 4242 4242`
+   - Expiry: `12/34`
+   - CVC: `123`
 
-### Use Test Card:
+## Troubleshooting
 
-When on Stripe Checkout page, use these test card numbers:
+### "Stripe price ID not configured"
+- Create the product in Stripe Dashboard
+- Copy the **Price ID** (not Product ID!)
+- Update `STRIPE_PRICE_ID` in `.env`
+- Restart backend
 
-| Card Number | Scenario |
-|------------|----------|
-| 4242 4242 4242 4242 | Successful payment |
-| 4000 0025 0000 3155 | Requires authentication (3D Secure) |
-| 4000 0000 0000 9995 | Declined |
-
-- **Expiry**: Any future date (e.g., 12/34)
-- **CVC**: Any 3 digits (e.g., 123)
-- **ZIP**: Any 5 digits (e.g., 12345)
-
-### Verify Success:
-
-After successful payment:
-1. You should be redirected to `/checkout/success`
-2. Check Supabase database:
-   - `subscriptions` table should have a new record
-   - `domains` table should have your domain (status: `pending_purchase`)
-   - `transactions` table should have the payment record
-3. Check Stripe Dashboard:
-   - Go to [Payments](https://dashboard.stripe.com/test/payments)
-   - You should see the successful payment
-
-## Step 6: View Webhook Events
-
-If you set up webhooks:
-
-1. In the terminal running `stripe listen`, you'll see webhook events
-2. In Stripe Dashboard, go to [Webhooks](https://dashboard.stripe.com/test/webhooks)
-3. You can see all webhook events and their delivery status
-
-## Common Issues
-
-### "Stripe is not configured"
-
-Make sure you've added the API keys to `.env` and restarted the backend server.
-
-### "Invalid API key"
-
-- Check that you're using **test mode** keys (they start with `sk_test_` and `pk_test_`)
-- Make sure there are no extra spaces in the `.env` file
-
-### Webhooks not receiving events
-
-- Make sure `stripe listen` is running
-- Check that the webhook secret matches in your `.env`
-- Verify the forward URL is correct: `localhost:3001/api/checkout/webhook`
-
-### "Price ID not found"
-
-- Make sure you created the product and price in Stripe
-- Copy the **Price ID** (not the Product ID)
-- Update `STRIPE_PRICE_ID` in backend `.env`
-
-## Going to Production
-
-**Do NOT use test mode in production!**
-
-When ready to go live:
-
-1. Complete Stripe account activation
-2. Switch to **Live mode** in Stripe Dashboard
-3. Get your **live API keys** (start with `sk_live_` and `pk_live_`)
-4. Create live products and prices
-5. Set up **production webhooks** in Stripe Dashboard:
-   - Go to Webhooks → Add endpoint
-   - URL: `https://your-domain.com/api/checkout/webhook`
-   - Events to send: Select all `checkout.`, `customer.subscription.`, and `invoice.` events
-6. Update `.env` with live keys and webhook secret
-
-## Useful Links
-
-- [Stripe Dashboard](https://dashboard.stripe.com)
-- [Stripe Testing Guide](https://stripe.com/docs/testing)
-- [Stripe CLI Docs](https://stripe.com/docs/stripe-cli)
-- [Webhook Events](https://stripe.com/docs/api/events/types)
-
----
-
-Happy testing! 🎉
+### Webhook not working
+- Ensure `stripe listen` is running
+- Check webhook secret matches in `.env`
+- Verify backend is on port 3001

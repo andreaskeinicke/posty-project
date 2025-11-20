@@ -27,12 +27,18 @@ class StripeService {
       throw new Error('Stripe is not configured. Please add your Stripe API keys to .env');
     }
 
+    const priceId = process.env.STRIPE_PRICE_ID;
+
+    if (!priceId || priceId === 'price_xxxxxxxxxxxxx') {
+      throw new Error('Stripe price ID not configured. Please add STRIPE_PRICE_ID to .env');
+    }
+
     try {
       // Line items for the checkout
       const lineItems = [
         {
           // Posty subscription ($5/month)
-          price: process.env.STRIPE_PRICE_ID,
+          price: priceId,
           quantity: 1
         }
       ];

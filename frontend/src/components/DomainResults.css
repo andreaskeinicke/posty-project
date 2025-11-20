@@ -148,29 +148,101 @@
   margin-bottom: 4px;
 }
 
-.card-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #e9ecef;
+.pricing-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 2px solid #e9ecef;
 }
 
-.register-link {
-  padding: 10px 16px;
+.pricing-card-single {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: 2px solid #667eea;
+  border-radius: 12px;
+  padding: 24px;
   color: white;
-  text-decoration: none;
+  transition: all 0.3s;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.pricing-card-single:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+}
+
+.pricing-card-single h4 {
+  margin: 0 0 12px 0;
+  font-size: 20px;
+  color: white;
+  text-align: center;
+}
+
+.pricing-card-single .price {
+  font-size: 36px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.pricing-card-single .price span {
+  font-size: 18px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.pricing-card-single .features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px 0;
+}
+
+.pricing-card-single .features li {
+  padding: 10px 0;
+  font-size: 15px;
+  color: white;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.pricing-card-single .features li:last-child {
+  border-bottom: none;
+}
+
+.domain-cost {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 10px 12px;
   border-radius: 8px;
   font-size: 14px;
-  font-weight: 600;
+  color: white;
+  margin-bottom: 20px;
   text-align: center;
-  transition: transform 0.2s;
+  font-weight: 600;
 }
 
-.register-link:hover {
+.checkout-button {
+  width: 100%;
+  padding: 14px 28px;
+  border: none;
+  border-radius: 8px;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.checkout-button.primary {
+  background: white;
+  color: #667eea;
+}
+
+.checkout-button.primary:hover:not(:disabled) {
   transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.checkout-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .results-actions {
@@ -240,7 +312,8 @@
   margin-bottom: 8px;
 }
 
-.help-link {
+.help-link,
+.help-text {
   display: inline-block;
   color: #667eea;
   text-decoration: none;
@@ -251,6 +324,13 @@
 .help-link:hover {
   color: #764ba2;
   text-decoration: underline;
+}
+
+.help-text {
+  color: #6c757d;
+  font-weight: 400;
+  font-size: 14px;
+  margin: 0;
 }
 
 .error-state,

@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { supabase } from '../config/supabaseClient';
 import './DomainResults.css';
 
 function DomainResults({ suggestions, onStartOver }) {
   const [checkedDomains, setCheckedDomains] = useState({});
   const [isChecking, setIsChecking] = useState(false);
+  const [selectedDomain, setSelectedDomain] = useState(null);
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   useEffect(() => {
     if (suggestions?.suggestions) {
@@ -33,6 +37,48 @@ function DomainResults({ suggestions, onStartOver }) {
       console.error('Error checking domains:', error);
     } finally {
       setIsChecking(false);
+    }
+  };
+
+  const handleCheckout = async (domain, plan) => {
+    setIsCheckingOut(true);
+    setSelectedDomain(domain);
+    setSelectedPlan(plan);
+
+    try {
+      // Get user session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        alert('Please log in to continue with checkout');
+        window.location.href = '/';
+        return;
+      }
+
+      // Get domain price from checked domains
+      const domainInfo = checkedDomains[domain];
+      const domainPrice = domainInfo?.price || 0;
+
+      // Create checkout session
+      const response = await axios.post('/api/checkout/create-session', {
+        domainName: domain,
+        domainPrice,
+        plan
+      }, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+
+      if (response.data.success && response.data.url) {
+        // Redirect to Stripe checkout
+        window.location.href = response.data.url;
+      } else {
+        throw new Error('Failed to create checkout session');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      alert('Failed to start checkout. Please try again.');
+      setIsCheckingOut(false);
     }
   };
 
@@ -112,23 +158,29 @@ function DomainResults({ suggestions, onStartOver }) {
                 )}
 
                 {checkedDomains[suggestion.domain]?.available && (
-                  <div className="card-actions">
-                    <a
-                      href={`https://www.namecheap.com/domains/registration/results/?domain=${suggestion.domain}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="register-link"
-                    >
-                      Register on Namecheap →
-                    </a>
-                    <a
-                      href={`https://domains.google.com/registrar/search?searchTerm=${suggestion.domain}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="register-link"
-                    >
-                      Register on Google Domains →
-                    </a>
+                  <div className="pricing-section">
+                    <div className="pricing-card-single">
+                      <h4>Posty Plan</h4>
+                      <div className="price">$5<span>/month</span></div>
+                      <ul className="features">
+                        <li>✓ Custom domain email</li>
+                        <li>✓ Gmail integration</li>
+                        <li>✓ Professional identity</li>
+                        <li>✓ Easy setup & management</li>
+                      </ul>
+                      {checkedDomains[suggestion.domain]?.price > 0 && (
+                        <div className="domain-cost">
+                          + ${checkedDomains[suggestion.domain].price.toFixed(2)} domain/year
+                        </div>
+                      )}
+                      <button
+                        onClick={() => handleCheckout(suggestion.domain, 'starter')}
+                        disabled={isCheckingOut}
+                        className="checkout-button primary"
+                      >
+                        {isCheckingOut && selectedDomain === suggestion.domain ? 'Processing...' : 'Get Started'}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -151,21 +203,16 @@ function DomainResults({ suggestions, onStartOver }) {
       </div>
 
       <div className="next-steps">
-        <h3>Next Steps</h3>
+        <h3>How It Works</h3>
         <ol>
-          <li>Choose your favorite domain from the suggestions above</li>
-          <li>Register the domain with a registrar (Namecheap, Google Domains, etc.)</li>
-          <li>Set up email forwarding to your Gmail account</li>
-          <li>Configure Gmail to send emails from your custom domain</li>
+          <li>Choose your favorite domain and select a plan</li>
+          <li>Complete checkout - we'll register the domain via Cloudflare</li>
+          <li>We'll automatically set up email forwarding to your Gmail</li>
+          <li>Start using your professional custom email address!</li>
         </ol>
-        <a
-          href="https://support.google.com/mail/answer/22370"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="help-link"
-        >
-          Learn how to use custom domain with Gmail →
-        </a>
+        <p className="help-text">
+          Your domain will be registered through Cloudflare and configured automatically for Gmail integration.
+        </p>
       </div>
     </div>
   );

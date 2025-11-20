@@ -1,0 +1,210 @@
+.email-results {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 40px 20px;
+}
+
+.results-header {
+  text-align: center;
+  color: white;
+  margin-bottom: 40px;
+}
+
+.results-header h1 {
+  font-size: 36px;
+  font-weight: 700;
+  margin: 0 0 12px 0;
+}
+
+.results-header .subtitle {
+  font-size: 18px;
+  opacity: 0.9;
+  margin: 0;
+}
+
+.category-section {
+  max-width: 1200px;
+  margin: 0 auto 48px auto;
+}
+
+.category-header {
+  text-align: center;
+  color: white;
+  margin-bottom: 28px;
+}
+
+.category-header h2 {
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.category-icon {
+  font-size: 32px;
+}
+
+.category-description {
+  font-size: 16px;
+  opacity: 0.85;
+  margin: 0;
+}
+
+.email-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.email-card {
+  background: white;
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+}
+
+.email-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+.email-display {
+  margin-bottom: 16px;
+  flex-grow: 1;
+}
+
+.email-address {
+  font-size: 19px;
+  font-weight: 700;
+  color: #667eea;
+  margin-bottom: 6px;
+  word-break: break-all;
+}
+
+.pattern-label {
+  font-size: 13px;
+  color: #6c757d;
+  text-transform: capitalize;
+}
+
+.pricing-info {
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.plan-price,
+.domain-price {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.plan-price {
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 12px;
+  margin-bottom: 8px;
+}
+
+.price-label {
+  font-size: 14px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.price {
+  font-size: 18px;
+  font-weight: 700;
+  color: #212529;
+}
+
+.buy-button {
+  width: 100%;
+  padding: 13px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.buy-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.buy-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.results-footer {
+  text-align: center;
+  margin-top: 40px;
+}
+
+.button-secondary {
+  padding: 14px 32px;
+  background: white;
+  color: #667eea;
+  border: 2px solid white;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.button-secondary:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px);
+}
+
+.no-results {
+  max-width: 600px;
+  margin: 100px auto;
+  text-align: center;
+  background: white;
+  padding: 60px 40px;
+  border-radius: 16px;
+}
+
+.no-results h2 {
+  color: #212529;
+  margin: 0 0 16px 0;
+}
+
+.no-results p {
+  color: #6c757d;
+  margin: 0 0 32px 0;
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .email-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .results-header h1 {
+    font-size: 28px;
+  }
+
+  .results-header .subtitle {
+    font-size: 16px;
+  }
+
+  .email-address {
+    font-size: 20px;
+  }
+}

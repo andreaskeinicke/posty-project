@@ -1,557 +1,245 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 import axios from 'axios';
+import { supabase } from './config/supabaseClient';
+import Questionnaire from './components/Questionnaire';
+import EmailResults from './components/EmailResults';
 import SignupForm from './components/Auth/SignupForm';
 import LoginForm from './components/Auth/LoginForm';
 
 // Configure axios base URL
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+axios.defaults.baseURL = API_BASE_URL;
 
 function App() {
-  const [messages, setMessages] = useState([]);
-  const [inputValue, setInputValue] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [userInfo, setUserInfo] = useState({
-    fullName: '',
-    firstName: '',
-    preferredName: '',
-    normalizedName: '',
-    locationString: '',
-    professions: [],
-    interests: []
-  });
-  const [isListening, setIsListening] = useState(false);
-  const [recognition, setRecognition] = useState(null);
-  const [sessionId] = useState(() => Math.random().toString(36).substring(7));
-  const [buttonOptions, setButtonOptions] = useState(null);
+  const [view, setView] = useState('landing'); // landing, questionnaire, results
+  const [user, setUser] = useState(null);
+  const [emailSuggestions, setEmailSuggestions] = useState(null);
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [user, setUser] = useState(null);
-  const [selectedDomain, setSelectedDomain] = useState(null);
-  const [domainPrices, setDomainPrices] = useState({}); // Store domain -> price mapping
 
-  const messagesEndRef = useRef(null);
-  const inputRef = useRef(null);
-  const hasInitialized = useRef(false);
-
-  // Initialize voice recognition
+  // Check for user session on mount
   useEffect(() => {
-    // Prevent duplicate initialization in React StrictMode
-    if (hasInitialized.current) return;
-    hasInitialized.current = true;
+    checkUserSession();
 
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognitionInstance = new SpeechRecognition();
-      recognitionInstance.continuous = false;
-      recognitionInstance.interimResults = false;
-      recognitionInstance.lang = 'en-US';
-
-      recognitionInstance.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        setInputValue(transcript);
-        setIsListening(false);
-        setTimeout(() => {
-          if (inputRef.current) {
-            inputRef.current.focus();
-          }
-        }, 100);
-      };
-
-      recognitionInstance.onerror = () => {
-        setIsListening(false);
-      };
-
-      recognitionInstance.onend = () => {
-        setIsListening(false);
-      };
-
-      setRecognition(recognitionInstance);
-    }
-
-    // Send initial message
-    addBotMessage("Hi! I'm here to help you find the perfect email domain. What's your full name?");
-
-    // Focus input on load
-    setTimeout(() => {
-      if (inputRef.current) {
-        inputRef.current.focus();
+    // Listen for auth state changes
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        setUser(session.user);
+      } else {
+        setUser(null);
       }
-    }, 1000);
+    });
+
+    return () => {
+      authListener?.subscription?.unsubscribe();
+    };
   }, []);
 
-  // Auto-scroll to bottom
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isTyping]);
-
-  // Auto-focus after typing
-  useEffect(() => {
-    if (!isTyping && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [isTyping]);
-
-  const addBotMessage = (text, delay = 800) => {
-    setIsTyping(true);
-    setTimeout(() => {
-      setMessages(prev => [...prev, { text, sender: 'bot', timestamp: new Date() }]);
-      setIsTyping(false);
-    }, delay);
-  };
-
-  const addUserMessage = (text) => {
-    setMessages(prev => [...prev, { text, sender: 'user', timestamp: new Date() }]);
-  };
-
-  const toggleVoiceInput = () => {
-    if (!recognition) return;
-
-    if (isListening) {
-      recognition.stop();
-      setIsListening(false);
-    } else {
-      recognition.start();
-      setIsListening(true);
+  const checkUserSession = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      setUser(session.user);
     }
   };
 
-  const handleDomainSelection = async (domain) => {
-    setSelectedDomain(domain);
+  const handleStartQuestionnaire = () => {
+    // Always go to questionnaire first - signup happens later when they buy
+    setView('questionnaire');
+  };
 
-    // Check domain availability and get price
+  const handleQuestionnaireComplete = async (data) => {
+    setView('generating');
+
     try {
-      addBotMessage(`Checking ${domain}...`);
+      // Get user session for auth
+      const { data: { session } } = await supabase.auth.getSession();
 
-      const availabilityResponse = await axios.post(
-        `${API_BASE_URL}/api/domains/check`,
-        { domain }
-      );
-
-      if (availabilityResponse.data.available) {
-        const price = availabilityResponse.data.price || 12; // Fallback to $12
-
-        // Store the price for this domain
-        setDomainPrices(prev => ({ ...prev, [domain]: price }));
-
-        addBotMessage(`Great news! ${domain} is available for $${price}/year.`);
-
-        // Check if user is logged in
-        const accessToken = localStorage.getItem('accessToken');
-        if (accessToken && user) {
-          // User is logged in, proceed to checkout
-          handleCheckout(domain);
-        } else {
-          // Show signup modal
-          setShowSignupModal(true);
-        }
-      } else {
-        addBotMessage(`Sorry, ${domain} is already taken. Would you like to see other suggestions?`);
-        setSelectedDomain(null);
-      }
-    } catch (error) {
-      console.error('Error checking domain:', error);
-      addBotMessage(`There was an error checking ${domain}. Please try another domain.`);
-      setSelectedDomain(null);
-    }
-  };
-
-  const handleCheckout = async (domain) => {
-    try {
-      addBotMessage(`Great choice! Setting up checkout for ${domain}...`);
-
-      const accessToken = localStorage.getItem('accessToken');
-
-      // Get the actual price for this domain (or fallback to $12)
-      const domainPrice = domainPrices[domain] || 12;
-
-      // Call backend to create Stripe checkout session
-      const response = await axios.post(
-        `${API_BASE_URL}/api/checkout/create-session`,
-        {
-          domainName: domain,
-          domainPrice: domainPrice,
-          sessionId: sessionId
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-
-      if (response.data.success && response.data.url) {
-        // Redirect to Stripe Checkout
-        window.location.href = response.data.url;
-      } else {
-        addBotMessage('Sorry, there was an issue setting up checkout. Please try again.');
-      }
-    } catch (error) {
-      console.error('Checkout error:', error);
-      addBotMessage('Sorry, there was an error processing your checkout. Please try again or contact support.');
-    }
-  };
-
-  const handleSignupSuccess = (user, accessToken) => {
-    setUser(user);
-    setShowSignupModal(false);
-
-    // Proceed to checkout with selected domain
-    if (selectedDomain) {
-      handleCheckout(selectedDomain);
-    } else {
-      addBotMessage(`Welcome aboard, ${user.firstName}! Your account is all set up. Continue chatting to find your perfect domain.`);
-    }
-  };
-
-  const handleButtonClick = async (optionValue, optionLabel) => {
-    if (isTyping) return;
-
-    // Check if this is a domain selection button
-    if (optionValue.includes('.')) {
-      // Looks like a domain name
-      handleDomainSelection(optionValue);
-      return;
-    }
-
-    // Add user message showing what they selected
-    addUserMessage(optionLabel);
-    setButtonOptions(null); // Hide buttons
-
-    // Send the option value to backend
-    await sendMessageToBackend(optionValue);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!inputValue.trim() || isTyping) return;
-
-    const userMessage = inputValue.trim();
-    addUserMessage(userMessage);
-    setInputValue('');
-
-    await sendMessageToBackend(userMessage);
-  };
-
-  const sendMessageToBackend = async (message) => {
-    // Send to backend
-    try {
-      setIsTyping(true);
-      const response = await axios.post(`${API_BASE_URL}/api/chat`, {
-        message: message,
-        sessionId: sessionId
+      // Call backend to generate deterministic email suggestions
+      const response = await axios.post('/api/questionnaire/analyze', {
+        responses: data.responses || data
+      }, {
+        headers: session ? {
+          'Authorization': `Bearer ${session.access_token}`
+        } : {}
       });
 
-      // Update user info if provided
-      if (response.data.userInfo) {
-        setUserInfo(prev => ({
-          ...prev,
-          ...response.data.userInfo
-        }));
-      }
-
-      // Check for button options
-      if (response.data.options) {
-        setButtonOptions(response.data.options);
-      } else {
-        setButtonOptions(null);
-      }
-
-      // Add bot response
-      setTimeout(() => {
-        setMessages(prev => [...prev, {
-          text: response.data.reply,
-          sender: 'bot',
-          timestamp: new Date()
-        }]);
-        setIsTyping(false);
-      }, 800);
+      console.log('Email suggestions received:', response.data);
+      // Extract suggestions from response
+      setEmailSuggestions(response.data.suggestions || response.data);
+      setView('results');
     } catch (error) {
-      console.error('Error sending message:', error);
-      setTimeout(() => {
-        setMessages(prev => [...prev, {
-          text: "Sorry, I'm having trouble connecting. Please try again.",
-          sender: 'bot',
-          timestamp: new Date()
-        }]);
-        setIsTyping(false);
-        setButtonOptions(null);
-      }, 800);
+      console.error('Error generating suggestions:', error);
+      alert('Failed to generate email suggestions. Please try again.');
+      setView('questionnaire');
     }
-
-    // Refocus input
-    setTimeout(() => {
-      if (inputRef.current) {
-        inputRef.current.focus();
-      }
-    }, 100);
   };
 
-  return (
-    <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
-      <div className="w-full max-w-6xl">
-        <div className="flex gap-6">
-          {/* Main Chat */}
-          <div className="flex-1 bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col chat-container">
-            {/* Header */}
-            <div className="gradient-bg text-white p-6">
-              <h1 className="text-2xl font-bold">Posty</h1>
-              <p className="text-purple-100 text-sm">Let's find your perfect email domain</p>
+  const handleStartOver = () => {
+    setEmailSuggestions(null);
+    setView('landing');
+  };
+
+  const handleSignupSuccess = (newUser) => {
+    setUser(newUser);
+    setShowSignupModal(false);
+    setView('questionnaire');
+  };
+
+  const handleLoginSuccess = (loggedInUser) => {
+    setUser(loggedInUser);
+    setShowLoginModal(false);
+    setView('questionnaire');
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setView('landing');
+  };
+
+  // Landing Page View
+  if (view === 'landing') {
+    return (
+      <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
+        <div className="max-w-4xl w-full text-center">
+          <div className="bg-white rounded-2xl shadow-2xl p-12">
+            <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Posty
+            </h1>
+            <p className="text-2xl text-gray-700 mb-8">
+              Get a custom email address with your own domain
+            </p>
+            <p className="text-lg text-gray-600 mb-12 max-w-2xl mx-auto">
+              We'll find available email addresses for you, handle domain registration, and set up everything with Gmail.
+              All for just $5/month.
+            </p>
+
+            <div className="grid md:grid-cols-3 gap-6 mb-12">
+              <div className="p-6 bg-purple-50 rounded-xl">
+                <div className="text-3xl mb-3">📧</div>
+                <h3 className="font-semibold text-gray-900 mb-2">Your Own Domain</h3>
+                <p className="text-sm text-gray-600">Get a professional email like you@yourdomain.com</p>
+              </div>
+              <div className="p-6 bg-blue-50 rounded-xl">
+                <div className="text-3xl mb-3">✓</div>
+                <h3 className="font-semibold text-gray-900 mb-2">Keep Using Gmail</h3>
+                <p className="text-sm text-gray-600">No switching needed - works with your Gmail account</p>
+              </div>
+              <div className="p-6 bg-green-50 rounded-xl">
+                <div className="text-3xl mb-3">⚡</div>
+                <h3 className="font-semibold text-gray-900 mb-2">We Handle Everything</h3>
+                <p className="text-sm text-gray-600">Domain registration, DNS setup, email forwarding - all done for you</p>
+              </div>
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {messages.map((msg, idx) => (
-                <div key={idx} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'} message-enter`}>
-                  <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                    msg.sender === 'user'
-                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    <p className="whitespace-pre-line">{msg.text}</p>
-                  </div>
-                </div>
-              ))}
+            <button
+              onClick={handleStartQuestionnaire}
+              className="px-12 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl text-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg transform hover:scale-105"
+            >
+              Find My Email Address
+            </button>
 
-              {isTyping && (
-                <div className="flex justify-start">
-                  <div className="bg-gray-100 rounded-2xl px-4 py-3">
-                    <div className="typing-indicator flex gap-1">
-                      <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
-                      <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
-                      <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Input */}
-            <div className="border-t p-4 bg-gray-50">
-              {/* Button Options */}
-              {buttonOptions && buttonOptions.type === 'buttons' && (
-                <div className="mb-4 space-y-2">
-                  <p className="text-sm text-gray-600 mb-3">Choose an option:</p>
-                  <div className="grid grid-cols-1 gap-2">
-                    {buttonOptions.options.map((option, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => handleButtonClick(option.value, option.label)}
-                        disabled={isTyping}
-                        className="w-full text-left px-4 py-3 bg-white border-2 border-gray-300 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <div className="font-medium text-gray-900">{option.label}</div>
-                        {option.example && (
-                          <div className="text-sm text-gray-500 mt-1">{option.example}</div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Text Input Form */}
-              <form onSubmit={handleSubmit} className="flex gap-3">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  placeholder={buttonOptions ? "Or type your answer..." : "Type your answer..."}
-                  disabled={isTyping}
-                  className="flex-1 px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
-                />
-
-                {recognition && (
-                  <button
-                    type="button"
-                    onClick={toggleVoiceInput}
-                    disabled={isTyping}
-                    className={`px-4 py-3 rounded-xl transition-all ${
-                      isListening
-                        ? 'bg-red-500 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    } disabled:opacity-50`}
-                  >
-                    {isListening ? (
-                      <div className="voice-wave">
-                        <div className="voice-bar"></div>
-                        <div className="voice-bar"></div>
-                        <div className="voice-bar"></div>
-                        <div className="voice-bar"></div>
-                        <div className="voice-bar"></div>
-                      </div>
-                    ) : (
-                      <span>🎤</span>
-                    )}
+            {user && (
+              <div className="mt-6">
+                <p className="text-sm text-gray-600">
+                  Signed in as {user.email} •{' '}
+                  <button onClick={handleLogout} className="text-purple-600 hover:underline">
+                    Sign out
                   </button>
-                )}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
 
-                <button
-                  type="submit"
-                  disabled={isTyping || !inputValue.trim()}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-md transform hover:scale-[1.02]"
-                >
-                  Send
-                </button>
-              </form>
+        {/* Signup Modal */}
+        {showSignupModal && (
+          <div className="modal-overlay" onClick={() => setShowSignupModal(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>Create Your Account</h2>
+                <button className="modal-close" onClick={() => setShowSignupModal(false)}>×</button>
+              </div>
+              <SignupForm
+                onSuccess={handleSignupSuccess}
+                onSwitchToLogin={() => {
+                  setShowSignupModal(false);
+                  setShowLoginModal(true);
+                }}
+              />
             </div>
           </div>
+        )}
 
-          {/* Right Sidebar */}
-          <div className="w-80 space-y-6">
-            {/* Captured Info */}
-            <div className="bg-white rounded-2xl shadow-xl p-6">
-              <CapturedInfoSidebar userInfo={userInfo} />
-            </div>
-
-            {/* Posty Info */}
-            <div className="bg-white rounded-2xl shadow-xl p-6">
-              <InfoSidebar />
+        {/* Login Modal */}
+        {showLoginModal && (
+          <div className="modal-overlay" onClick={() => setShowLoginModal(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>Welcome Back</h2>
+                <button className="modal-close" onClick={() => setShowLoginModal(false)}>×</button>
+              </div>
+              <LoginForm
+                onSuccess={handleLoginSuccess}
+                onSwitchToSignup={() => {
+                  setShowLoginModal(false);
+                  setShowSignupModal(true);
+                }}
+              />
             </div>
           </div>
+        )}
+      </div>
+    );
+  }
+
+  // Questionnaire View
+  if (view === 'questionnaire') {
+    return (
+      <Questionnaire
+        onComplete={handleQuestionnaireComplete}
+        onBack={handleStartOver}
+      />
+    );
+  }
+
+  // Generating View
+  if (view === 'generating') {
+    return (
+      <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl p-12 text-center max-w-md">
+          <div className="mb-6">
+            <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-4 border-purple-600"></div>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Checking Domain Availability</h2>
+          <p className="text-gray-600">
+            We're checking all possible email addresses for your name to show you only what's available...
+          </p>
         </div>
       </div>
+    );
+  }
 
-      {/* Signup Modal */}
-      {showSignupModal && (
-        <div className="modal-overlay" onClick={() => setShowSignupModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Create Your Account</h2>
-              <button className="modal-close" onClick={() => setShowSignupModal(false)}>×</button>
-            </div>
-            <SignupForm
-              sessionId={sessionId}
-              selectedDomain={selectedDomain}
-              onSuccess={handleSignupSuccess}
-              onSwitchToLogin={() => {
-                setShowSignupModal(false);
-                setShowLoginModal(true);
-              }}
-            />
-          </div>
-        </div>
-      )}
+  // Results View
+  if (view === 'results' && emailSuggestions) {
+    return <EmailResults suggestions={emailSuggestions} onStartOver={handleStartOver} />;
+  }
 
-      {/* Login Modal */}
-      {showLoginModal && (
-        <div className="modal-overlay" onClick={() => setShowLoginModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Welcome Back</h2>
-              <button className="modal-close" onClick={() => setShowLoginModal(false)}>×</button>
-            </div>
-            <LoginForm
-              onSuccess={(user, accessToken) => {
-                setUser(user);
-                setShowLoginModal(false);
-                if (selectedDomain) {
-                  handleCheckout(selectedDomain);
-                } else {
-                  addBotMessage(`Welcome back, ${user.firstName}!`);
-                }
-              }}
-              onSwitchToSignup={() => {
-                setShowLoginModal(false);
-                setShowSignupModal(true);
-              }}
-            />
-          </div>
-        </div>
-      )}
+  // Fallback
+  return (
+    <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl p-12 text-center">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Something went wrong</h2>
+        <button
+          onClick={handleStartOver}
+          className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700"
+        >
+          Start Over
+        </button>
+      </div>
     </div>
   );
 }
-
-const InfoSidebar = () => (
-  <div className="space-y-4">
-    <h3 className="font-semibold text-gray-900">What is Posty?</h3>
-    <div className="space-y-3 text-sm text-gray-600">
-      <p>Get a custom email address with your own domain while keeping Gmail.</p>
-      <div className="space-y-2">
-        <div className="flex items-start gap-2">
-          <span className="text-purple-600 font-bold">✓</span>
-          <span>Your own domain (e.g., andreas@yourdomain.com)</span>
-        </div>
-        <div className="flex items-start gap-2">
-          <span className="text-purple-600 font-bold">✓</span>
-          <span>Still use Gmail (no switching needed)</span>
-        </div>
-        <div className="flex items-start gap-2">
-          <span className="text-purple-600 font-bold">✓</span>
-          <span>Professional email identity</span>
-        </div>
-      </div>
-      <div className="pt-3 border-t">
-        <p className="font-medium text-gray-900">$5/month</p>
-        <p className="text-xs text-gray-500">+ domain cost (~$10-15/year)</p>
-      </div>
-    </div>
-  </div>
-);
-
-const CapturedInfoSidebar = ({ userInfo }) => {
-  const hasSpecialChars = userInfo.preferredName !== userInfo.normalizedName;
-
-  return (
-    <div className="space-y-4">
-      <h3 className="font-semibold text-gray-900">About You</h3>
-
-      {userInfo.fullName && (
-        <div>
-          <p className="text-xs text-gray-500 mb-1">Name</p>
-          <span className="inline-block px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
-            {userInfo.fullName}
-          </span>
-          {hasSpecialChars && (
-            <p className="text-xs text-gray-500 mt-1">
-              For domains: "{userInfo.normalizedName}"
-            </p>
-          )}
-        </div>
-      )}
-
-      {userInfo.locationString && (
-        <div>
-          <p className="text-xs text-gray-500 mb-1">Location</p>
-          <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
-            {userInfo.locationString}
-          </span>
-        </div>
-      )}
-
-      {userInfo.professions && userInfo.professions.length > 0 && (
-        <div>
-          <p className="text-xs text-gray-500 mb-1">Profession</p>
-          <div className="flex flex-wrap gap-2">
-            {userInfo.professions.map((prof, i) => (
-              <span key={i} className="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
-                {prof}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {userInfo.interests && userInfo.interests.length > 0 && (
-        <div>
-          <p className="text-xs text-gray-500 mb-1">Interests</p>
-          <div className="flex flex-wrap gap-2">
-            {userInfo.interests.map((interest, i) => (
-              <span key={i} className="inline-block px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">
-                {interest}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 export default App;

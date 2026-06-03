@@ -36,6 +36,7 @@ app.use('/api/chat', require('./routes/chat'));
 app.use('/api/domains', require('./routes/domains'));
 app.use('/api/questionnaire', require('./routes/questionnaire'));
 app.use('/api/checkout', require('./routes/checkout'));
+app.use('/api/verification', require('./routes/verification'));
 
 // Health check
 app.get('/health', (req, res) => {

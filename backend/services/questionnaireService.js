@@ -1,7 +1,8 @@
 const claudeService = require('./claudeService');
 const emailGenerator = require('./emailGenerator');
 const domainRecommendationEngine = require('./domainRecommendationEngine');
-const domainService = require('./domainService');
+const domainAvailabilityService = require('./domainAvailabilityService');
+const aiRecommendationService = require('./aiRecommendationService');
 
 class QuestionnaireService {
   /**
@@ -100,69 +101,70 @@ class QuestionnaireService {
    */
   async generateSuggestions(profile) {
     try {
-      console.log('🎯 Generating 10-category domain recommendations for:', profile.name);
-      console.log('📦 Profile data:', JSON.stringify(profile, null, 2));
+      console.log('🎯 Generating email recommendations for:', profile.name);
 
-      // 1. Generate domains across all 10 categories
-      const allDomains = domainRecommendationEngine.generateRecommendations(profile);
+      // 1. Generate candidates — AI engine first, rule engine as fallback
+      let candidates;
+      if (aiRecommendationService.isReady()) {
+        try {
+          candidates = await aiRecommendationService.generateCandidates(profile);
+        } catch (aiError) {
+          console.error('AI engine failed, falling back to rule engine:', aiError.message);
+        }
+      }
+      if (!candidates || candidates.length === 0) {
+        const firstName = (profile.name || 'you').split(' ')[0].toLowerCase();
+        candidates = domainRecommendationEngine.generateRecommendations(profile).map(d => ({
+          domain: d.domain,
+          prefix: firstName,
+          category: d.category,
+          priority: d.priority,
+          note: d.description
+        }));
+        console.log(`📧 Rule engine generated ${candidates.length} candidates`);
+      }
 
-      console.log(`📧 Generated ${allDomains.length} domain suggestions across categories`);
-
-      // 2. Extract unique domains to check
-      const domainsToCheck = [...new Set(allDomains.map(d => d.domain))];
-
-      // 3. Check availability for ALL domains via Cloudflare
+      // 2. Check availability for all unique domains in parallel
+      const domainsToCheck = [...new Set(candidates.map(c => c.domain))];
       console.log(`🔍 Checking availability for ${domainsToCheck.length} domains...`);
+      const availabilityResults = await domainAvailabilityService.checkMultipleDomains(domainsToCheck);
 
-      const availabilityResults = await Promise.all(
-        domainsToCheck.map(async (domainName) => {
-          try {
-            const result = await domainService.checkAvailability(domainName);
-            return result;
-          } catch (error) {
-            console.error(`Error checking ${domainName}:`, error.message);
-            return { domain: domainName, available: false, price: 0 };
-          }
-        })
-      );
-
-      console.log(`✅ Checked ${availabilityResults.length} domains`);
-
-      // 4. Merge availability data with domain suggestions
       const domainMap = {};
       availabilityResults.forEach(d => {
         domainMap[d.domain] = d;
       });
 
-      const enrichedDomains = allDomains.map(domain => ({
-        ...domain,
-        available: domainMap[domain.domain]?.available || false,
-        price: domainMap[domain.domain]?.price || 0
+      // 3. Merge and split available / unavailable
+      const enriched = candidates.map(c => ({
+        ...c,
+        available: domainMap[c.domain]?.available || false,
+        price: domainMap[c.domain]?.price || 0
       }));
-
-      // 5. Separate available and unavailable
-      const availableDomains = enrichedDomains.filter(d => d.available);
-      const unavailableDomains = enrichedDomains.filter(d => !d.available);
+      const availableDomains = enriched.filter(d => d.available);
+      const unavailableDomains = enriched.filter(d => !d.available);
 
       console.log(`🎉 Found ${availableDomains.length} available domains`);
 
-      // 6. Group by category for structured response
-      const grouped = domainRecommendationEngine.groupByCategory(availableDomains);
+      // 4. Group by category for structured response
+      const grouped = {};
+      availableDomains.forEach(d => {
+        (grouped[d.category] = grouped[d.category] || []).push(d);
+      });
 
       return {
         success: true,
         profile: profile,
         suggestions: {
-          suggestions: availableDomains.map(domain => ({
-            email: `${profile.name.split(' ')[0].toLowerCase()}@${domain.domain}`,
-            domain: domain.domain,
-            category: domain.category,
-            priority: domain.priority,
-            price: domain.price,
-            available: domain.available,
-            rating: 5 - domain.priority, // Higher priority = higher rating
-            reasoning: domain.description,
-            pattern: domain.pattern || domain.domain // Include pattern for frontend
+          suggestions: availableDomains.map(d => ({
+            email: `${d.prefix}@${d.domain}`,
+            domain: d.domain,
+            category: d.category,
+            priority: d.priority,
+            price: d.price,
+            available: d.available,
+            rating: 5 - d.priority,
+            reasoning: d.note,
+            pattern: d.pattern || d.domain
           })),
           grouped: grouped,
           total: availableDomains.length,

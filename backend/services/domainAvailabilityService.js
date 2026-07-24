@@ -60,7 +60,9 @@ class DomainAvailabilityService {
   }
 
   /**
-   * Perform the actual domain check
+   * Perform the actual domain check.
+   * Strategy: DNS NS lookup (fast negative) → RDAP registry query (authoritative).
+   * RDAP 404 = unregistered = available. RDAP 200 = registered = taken.
    */
   async _performCheck(domain) {
     console.log(`🔍 Checking availability for ${domain}`);
@@ -69,51 +71,34 @@ class DomainAvailabilityService {
       domain,
       available: false,
       status: 'taken', // 'available', 'taken', 'premium', 'error'
+      price: this._estimatePrice(domain),
       checkedAt: new Date().toISOString(),
       method: 'unknown'
     };
 
     try {
-      // Try Cloudflare first (if configured)
-      if (cloudflareService.isReady()) {
-        try {
-          const cloudflareResult = await cloudflareService.checkDomain(domain);
-          console.log(`✓ ${domain}: ${cloudflareResult.status} (cloudflare)`);
-          return cloudflareResult;
-        } catch (cloudflareError) {
-          console.warn(`Cloudflare check failed for ${domain}, falling back to DNS/WHOIS`);
-          console.warn(`Error: ${cloudflareError.message}`);
-          // Continue to fallback methods below
-        }
-      }
-
-      // Fallback: DNS + WHOIS check
-      // Step 1: Quick DNS check
-      const dnsAvailable = await this._checkDNS(domain);
-
-      if (dnsAvailable) {
-        // Domain doesn't resolve - likely available
-        // Confirm with WHOIS for accuracy
-        const whoisResult = await this._checkWHOIS(domain);
-
-        if (whoisResult.available) {
-          result.available = true;
-          result.status = 'available';
-          result.method = 'whois';
-        } else if (whoisResult.premium) {
-          result.available = false;
-          result.status = 'premium';
-          result.method = 'whois';
-        } else {
-          result.available = false;
-          result.status = 'taken';
-          result.method = 'whois';
-        }
-      } else {
-        // Domain resolves - definitely taken
-        result.available = false;
+      // Step 1: registered domains virtually always have NS records
+      const hasNameservers = await this._hasNameservers(domain);
+      if (hasNameservers) {
         result.status = 'taken';
         result.method = 'dns';
+        console.log(`✓ ${domain}: taken (dns)`);
+        return result;
+      }
+
+      // Step 2: authoritative RDAP check against the registry
+      const rdap = await this._checkRDAP(domain);
+      result.method = 'rdap';
+      if (rdap === 'available') {
+        result.available = true;
+        result.status = 'available';
+      } else if (rdap === 'taken') {
+        result.status = 'taken';
+      } else {
+        // RDAP unreachable for this TLD — no NS records is a decent signal,
+        // but don't promise availability we can't verify
+        result.status = 'unknown';
+        result.method = 'dns-only';
       }
     } catch (error) {
       console.error(`Error checking ${domain}:`, error.message);
@@ -127,20 +112,52 @@ class DomainAvailabilityService {
   }
 
   /**
-   * Check DNS - if domain resolves, it's taken
+   * RDAP lookup via rdap.org bootstrap (redirects to the registry's RDAP server).
+   * @returns {'available'|'taken'|'unknown'}
    */
-  async _checkDNS(domain) {
+  async _checkRDAP(domain) {
     try {
-      await dns.resolve4(domain);
-      // Domain resolves = taken
-      return false;
+      const response = await fetch(`https://rdap.org/domain/${encodeURIComponent(domain)}`, {
+        redirect: 'follow',
+        signal: AbortSignal.timeout(8000),
+        headers: { Accept: 'application/rdap+json' }
+      });
+      if (response.status === 404) return 'available';
+      if (response.ok) return 'taken';
+      return 'unknown';
+    } catch (error) {
+      console.warn(`RDAP check failed for ${domain}: ${error.message}`);
+      return 'unknown';
+    }
+  }
+
+  /**
+   * Rough retail registration price per TLD (USD/year).
+   * TODO: replace with live registrar pricing before scaling.
+   */
+  _estimatePrice(domain) {
+    const tld = domain.slice(domain.indexOf('.'));
+    const prices = {
+      '.com': 13, '.net': 14, '.org': 13, '.dk': 12, '.eu': 9,
+      '.io': 45, '.me': 22, '.co': 30, '.email': 25, '.dev': 15,
+      '.app': 17, '.xyz': 13, '.club': 14, '.online': 30, '.uk': 9
+    };
+    return prices[tld] || 20;
+  }
+
+  /**
+   * Check for NS records - registered domains almost always have them
+   */
+  async _hasNameservers(domain) {
+    try {
+      const records = await dns.resolveNs(domain);
+      return records.length > 0;
     } catch (error) {
       if (error.code === 'ENOTFOUND' || error.code === 'ENODATA') {
-        // Domain doesn't resolve = potentially available
-        return true;
+        return false;
       }
-      // Other DNS errors
-      throw error;
+      // Other DNS errors (timeout etc.) — treat as no signal, RDAP decides
+      return false;
     }
   }
 
@@ -194,26 +211,31 @@ class DomainAvailabilityService {
   }
 
   /**
-   * Batch check multiple domains
+   * Batch check multiple domains (limited concurrency to be kind to RDAP servers)
    */
-  async checkMultipleDomains(domains) {
-    const results = await Promise.allSettled(
-      domains.map(domain => this.checkDomain(domain))
-    );
+  async checkMultipleDomains(domains, concurrency = 8) {
+    const results = new Array(domains.length);
+    let cursor = 0;
 
-    return results.map((result, index) => {
-      if (result.status === 'fulfilled') {
-        return result.value;
-      } else {
-        return {
-          domain: domains[index],
-          available: false,
-          status: 'error',
-          error: result.reason?.message || 'Unknown error',
-          checkedAt: new Date().toISOString()
-        };
+    const worker = async () => {
+      while (cursor < domains.length) {
+        const index = cursor++;
+        try {
+          results[index] = await this.checkDomain(domains[index]);
+        } catch (error) {
+          results[index] = {
+            domain: domains[index],
+            available: false,
+            status: 'error',
+            error: error?.message || 'Unknown error',
+            checkedAt: new Date().toISOString()
+          };
+        }
       }
-    });
+    };
+
+    await Promise.all(Array.from({ length: Math.min(concurrency, domains.length) }, worker));
+    return results;
   }
 
   /**

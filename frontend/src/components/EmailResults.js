@@ -5,15 +5,37 @@ import './EmailResults.css';
 
 // Category display names and descriptions
 const CATEGORY_INFO = {
+  // v2 AI engine categories
+  'short-handle': {
+    name: 'Short & Sharp',
+    description: 'Ultra-short handles - easy to say, easy to type',
+    icon: '⭐'
+  },
+  'personal-brand': {
+    name: 'Your Name',
+    description: 'Your name as your address',
+    icon: '👤'
+  },
+  'professional': {
+    name: 'Professional',
+    description: 'Reads like a company address - because it is one',
+    icon: '💼'
+  },
+  'location': {
+    name: 'Your City',
+    description: 'Location-based addresses',
+    icon: '📍'
+  },
+  'fun': {
+    name: 'Just for You',
+    description: 'Creative picks based on what you told us',
+    icon: '✨'
+  },
+  // legacy rule-engine categories (fallback mode)
   'ultra-short-handles': {
     name: 'Ultra-Short Handles',
     description: 'Premium short domains - highly memorable',
     icon: '⭐'
-  },
-  'personal-brand': {
-    name: 'Personal Brand',
-    description: 'Your name as your domain',
-    icon: '👤'
   },
   'professional-identity': {
     name: 'Professional Identity',

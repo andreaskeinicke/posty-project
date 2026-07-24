@@ -6,10 +6,24 @@ import Questionnaire from './components/Questionnaire';
 import EmailResults from './components/EmailResults';
 import SignupForm from './components/Auth/SignupForm';
 import LoginForm from './components/Auth/LoginForm';
+import CheckoutSuccess from './components/CheckoutSuccess';
+import CheckoutCanceled from './components/CheckoutCanceled';
 
 // Configure axios base URL
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 axios.defaults.baseURL = API_BASE_URL;
+
+// Stripe redirects back to these paths after checkout (no router needed)
+function Root() {
+  const path = window.location.pathname;
+  if (path === '/checkout/success') {
+    return <CheckoutSuccess />;
+  }
+  if (path === '/checkout/canceled') {
+    return <CheckoutCanceled />;
+  }
+  return <App />;
+}
 
 function App() {
   const [view, setView] = useState('landing'); // landing, questionnaire, results
@@ -242,4 +256,4 @@ function App() {
   );
 }
 
-export default App;
+export default Root;

@@ -67,19 +67,19 @@ class StripeService {
         mode: 'subscription',
         payment_method_types: ['card'],
         line_items: lineItems,
-        customer_email: userEmail,
-        client_reference_id: userId,
+        ...(userEmail ? { customer_email: userEmail } : {}),
+        ...(userId ? { client_reference_id: userId } : {}),
 
         // Success and cancel URLs
         success_url: `${process.env.FRONTEND_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${process.env.FRONTEND_URL}/checkout/canceled`,
 
-        // Metadata for webhook processing
+        // Metadata for webhook processing (values must be strings, never null)
         metadata: {
-          userId,
+          userId: userId || 'guest',
           domainName,
           domainPrice: domainPrice?.toString() || '0',
-          questionnaireSessionId: sessionId,
+          questionnaireSessionId: sessionId || '',
           domainPurchaseRequired: domainPrice > 0 ? 'true' : 'false'
         },
 
@@ -89,7 +89,7 @@ class StripeService {
         // Subscription data
         subscription_data: {
           metadata: {
-            userId,
+            userId: userId || 'guest',
             domainName
           }
         }

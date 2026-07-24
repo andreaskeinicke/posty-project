@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const checkoutController = require('../controllers/checkoutController');
-const { supabaseAuth } = require('../middleware/supabaseAuth');
+const { supabaseAuth, optionalAuth } = require('../middleware/supabaseAuth');
 
 // Create session - auth optional (will handle guest checkout)
-router.post('/create-session', checkoutController.createCheckoutSession);
+router.post('/create-session', optionalAuth, checkoutController.createCheckoutSession);
 router.get('/session/:sessionId', supabaseAuth, checkoutController.getCheckoutSession);
 router.get('/success', checkoutController.checkoutSuccess);
 

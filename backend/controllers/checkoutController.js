@@ -8,8 +8,8 @@ const { supabaseAdmin } = require('../config/supabase');
 exports.createCheckoutSession = async (req, res) => {
   try {
     const { domainName, domainPrice } = req.body;
-    const userId = req.userId; // From auth middleware
-    const user = req.user;
+    const userId = req.userId || null; // From optionalAuth middleware; null for guests
+    const user = req.user || null;
 
     // Validation
     if (!domainName) {
@@ -21,7 +21,7 @@ exports.createCheckoutSession = async (req, res) => {
 
     // Get questionnaire session if available (from request or find latest)
     let sessionId = req.body.sessionId;
-    if (!sessionId) {
+    if (!sessionId && userId) {
       // Find the most recent session for this user
       const { data: sessions } = await supabaseAdmin
         .from('questionnaire_sessions')
@@ -33,12 +33,12 @@ exports.createCheckoutSession = async (req, res) => {
       sessionId = sessions?.[0]?.session_id || null;
     }
 
-    console.log(`🛒 Creating checkout session for ${user.email} - ${domainName}`);
+    console.log(`🛒 Creating checkout session for ${user?.email || 'guest'} - ${domainName}`);
 
-    // Create Stripe checkout session
+    // Create Stripe checkout session (guest: Stripe collects the email)
     const checkoutSession = await stripeService.createCheckoutSession({
       userId,
-      userEmail: user.email,
+      userEmail: user?.email,
       domainName,
       domainPrice: domainPrice || 0,
       sessionId

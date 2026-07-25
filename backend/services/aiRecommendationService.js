@@ -1,4 +1,23 @@
 const Anthropic = require('@anthropic-ai/sdk');
+const fs = require('fs');
+const path = require('path');
+
+const PROMPT_VERSION = 'v2.1';
+
+// Playbook heuristics distilled from real cases (docs/CONCIERGE_PLAYBOOK.md).
+// Loaded once at boot; a playbook edit ships as a redeploy + version bump.
+function loadPlaybook() {
+  try {
+    const raw = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'docs', 'CONCIERGE_PLAYBOOK.md'),
+      'utf8'
+    );
+    const heuristics = raw.split('\n').filter(line => /^- H\d+:/.test(line));
+    return heuristics.length ? heuristics.join('\n') : '';
+  } catch {
+    return '';
+  }
+}
 
 /**
  * AI Recommendation Service (v2 engine)
@@ -29,10 +48,20 @@ Conventions to apply (guidance, not rules — spin freely):
 
 Categories (use exactly these ids): short-handle, personal-brand, professional, location, fun.
 
-Output: ONLY a JSON array, no prose, no markdown fences. 25-35 items. Each item:
-{"domain": "keinicke.dk", "prefix": "andreas", "category": "personal-brand", "note": "Your surname as your domain — reads like a company address."}
+Learned heuristics from real cases (follow these — they outrank the general guidance above):
+{{PLAYBOOK}}
 
-Notes must be short (max 12 words), concrete, and sell the idea. Never repeat a domain.`;
+You are a concierge, not a search engine. Score every item with "confidence" 1-5:
+how strongly YOU would argue this exact person should pick it (5 = you'd say
+"take this one" to their face). Mark exactly ONE item "pick": true — your
+personal recommendation — and write a top-level "pitch": 1-2 sentences arguing
+for it with a reason the person likely hasn't thought of. Include one wildcard:
+a creative idea outside the safe patterns (category "fun", any confidence).
+
+Output: ONLY a JSON object, no prose, no markdown fences:
+{"pitch": "...", "items": [{"domain": "keinicke.dk", "prefix": "andreas", "category": "personal-brand", "confidence": 5, "pick": true, "note": "Your surname as your domain — reads like a company address."}, ...]}
+
+25-35 items. Notes max 12 words, concrete, selling the idea. Never repeat a domain.`;
 
 class AIRecommendationService {
   constructor() {
@@ -40,6 +69,8 @@ class AIRecommendationService {
       ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
       : null;
     this.model = process.env.CLAUDE_MODEL || 'claude-sonnet-5';
+    this.promptVersion = PROMPT_VERSION;
+    this.systemPrompt = SYSTEM_PROMPT.replace('{{PLAYBOOK}}', loadPlaybook() || '(none yet)');
   }
 
   isReady() {
@@ -49,7 +80,7 @@ class AIRecommendationService {
   /**
    * Generate email address candidates for a profile.
    * @param {Object} profile - analyzed questionnaire profile (with _metadata)
-   * @returns {Promise<Array>} - [{ domain, prefix, category, note, priority }]
+   * @returns {Promise<Object>} - { pitch, candidates: [{ domain, prefix, category, note, priority, confidence, pick }] }
    */
   async generateCandidates(profile) {
     if (!this.client) {
@@ -60,7 +91,7 @@ class AIRecommendationService {
     const response = await this.client.messages.create({
       model: this.model,
       max_tokens: 12000,
-      system: SYSTEM_PROMPT,
+      system: this.systemPrompt,
       messages: [{ role: 'user', content: this._buildUserPrompt(profile) }]
     });
 
@@ -69,9 +100,41 @@ class AIRecommendationService {
       .map(block => block.text)
       .join('');
 
-    const candidates = this._parseCandidates(text);
-    console.log(`🤖 AI engine generated ${candidates.length} candidates (${this.model})`);
-    return candidates;
+    const result = this._parseCandidates(text);
+    console.log(`🤖 AI engine generated ${result.candidates.length} candidates (${this.model}, prompt ${this.promptVersion})`);
+    return result;
+  }
+
+  /**
+   * The model's original pick turned out unavailable: have it re-pick among
+   * the available candidates and write a fresh pitch. Cheap, fast call.
+   * @returns {Promise<{email: string, pitch: string}|null>}
+   */
+  async choosePick(profile, availableCandidates) {
+    if (!this.client || availableCandidates.length === 0) return null;
+    try {
+      const list = availableCandidates
+        .map(c => `${c.prefix}@${c.domain} (${c.category}: ${c.note})`)
+        .join('\n');
+      const response = await this.client.messages.create({
+        model: this.model,
+        max_tokens: 2000,
+        system: 'You are Posty\'s email concierge. Reply with ONLY a JSON object, no prose.',
+        messages: [{
+          role: 'user',
+          content: `${this._buildUserPrompt(profile)}\n\nThese addresses are confirmed available:\n${list}\n\nPick the ONE you would tell this person to take, with a 1-2 sentence pitch giving a reason they likely haven't thought of. Reply: {"email": "...", "pitch": "..."}`
+        }]
+      });
+      const text = response.content.filter(b => b.type === 'text').map(b => b.text).join('');
+      const match = text.match(/\{[\s\S]*\}/);
+      if (!match) return null;
+      const parsed = JSON.parse(match[0]);
+      if (typeof parsed.email !== 'string' || typeof parsed.pitch !== 'string') return null;
+      return parsed;
+    } catch (error) {
+      console.warn('choosePick failed (non-fatal):', error.message);
+      return null;
+    }
   }
 
   _buildUserPrompt(profile) {
@@ -101,7 +164,13 @@ class AIRecommendationService {
   }
 
   _parseCandidates(text) {
-    const start = text.indexOf('[');
+    // Pitch: parse independently so a truncated items array can't lose it
+    const pitchMatch = text.match(/"pitch"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+    const pitch = pitchMatch ? JSON.parse(`"${pitchMatch[1]}"`) : '';
+
+    // Items array: from the first '[' after "items" (fallback: first '[' anywhere)
+    const itemsKey = text.indexOf('"items"');
+    const start = text.indexOf('[', itemsKey === -1 ? 0 : itemsKey);
     if (start === -1) {
       throw new Error('AI response contained no JSON array');
     }
@@ -127,6 +196,8 @@ class AIRecommendationService {
       const domain = item.domain.toLowerCase().trim();
       // basic sanity: label.tld, ascii, no spaces
       if (!/^[a-z0-9][a-z0-9-]*\.[a-z.]{2,12}$/.test(domain)) continue;
+      // 1-2 char labels are registry-premium (RDAP says free, price says $$$$) — skip
+      if (domain.split('.')[0].length < 3) continue;
       if (seen.has(domain)) continue;
       seen.add(domain);
 
@@ -138,6 +209,8 @@ class AIRecommendationService {
           : 'hello',
         category,
         priority: CATEGORY_PRIORITY[category],
+        confidence: Number.isFinite(item.confidence) ? Math.min(5, Math.max(1, item.confidence)) : 3,
+        pick: item.pick === true,
         note: typeof item.note === 'string' ? item.note : ''
       });
     }
@@ -145,7 +218,7 @@ class AIRecommendationService {
     if (candidates.length === 0) {
       throw new Error('AI response parsed but contained no valid candidates');
     }
-    return candidates;
+    return { pitch, candidates };
   }
 }
 

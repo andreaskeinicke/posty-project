@@ -57,6 +57,7 @@ const CATEGORY_INFO = {
 function EmailResults({ suggestions, onStartOver }) {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [selectedEmail, setSelectedEmail] = useState(null);
+  const [showMore, setShowMore] = useState(false);
 
   const handleBuyNow = async (emailSuggestion) => {
     setIsCheckingOut(true);
@@ -69,7 +70,8 @@ function EmailResults({ suggestions, onStartOver }) {
       // Create checkout session
       const response = await axios.post('/api/checkout/create-session', {
         domainName: emailSuggestion.domain,
-        domainPrice: emailSuggestion.price || 0
+        domainPrice: emailSuggestion.price || 0,
+        caseId: suggestions.caseId || null
       }, {
         headers: session ? {
           'Authorization': `Bearer ${session.access_token}`
@@ -104,7 +106,11 @@ function EmailResults({ suggestions, onStartOver }) {
     );
   }
 
-  const emailSuggestions = suggestions.suggestions;
+  // Curated shortlist first; "Show more" reveals the rest
+  const moreSuggestions = suggestions.more || [];
+  const emailSuggestions = showMore
+    ? [...suggestions.suggestions, ...moreSuggestions]
+    : suggestions.suggestions;
 
   // Group suggestions by category
   const groupedByCategory = {};
@@ -114,13 +120,6 @@ function EmailResults({ suggestions, onStartOver }) {
       groupedByCategory[category] = [];
     }
     groupedByCategory[category].push(suggestion);
-  });
-
-  // Limit to 3-5 suggestions per category
-  Object.keys(groupedByCategory).forEach(category => {
-    groupedByCategory[category] = groupedByCategory[category]
-      .sort((a, b) => a.priority - b.priority) // Sort by priority
-      .slice(0, 5); // Max 5 per category
   });
 
   // Sort categories by priority (based on first item in each category)
@@ -134,8 +133,19 @@ function EmailResults({ suggestions, onStartOver }) {
     <div className="email-results">
       <div className="results-header">
         <h1>Your Available Email Addresses</h1>
-        <p className="subtitle">Found {emailSuggestions.length} available domains - pick one and buy it now!</p>
+        <p className="subtitle">
+          {showMore
+            ? `All ${emailSuggestions.length} available addresses`
+            : `Our ${emailSuggestions.length} favorites for you — all checked and available`}
+        </p>
       </div>
+
+      {suggestions.pitch && (
+        <div className="concierge-pitch">
+          <span className="pitch-icon">💡</span>
+          <p>{suggestions.pitch}</p>
+        </div>
+      )}
 
       {sortedCategories.map(categoryKey => {
         const categoryDomains = groupedByCategory[categoryKey];
@@ -159,7 +169,8 @@ function EmailResults({ suggestions, onStartOver }) {
 
             <div className="email-grid">
               {categoryDomains.map((suggestion, index) => (
-                <div key={index} className="email-card">
+                <div key={index} className={`email-card${suggestion.pick ? ' pick-card' : ''}`}>
+                  {suggestion.pick && <div className="pick-badge">Our pick</div>}
                   <div className="email-display">
                     <div className="email-address">{suggestion.email}</div>
                     <div className="pattern-label">{suggestion.reasoning || suggestion.pattern}</div>
@@ -193,6 +204,11 @@ function EmailResults({ suggestions, onStartOver }) {
       })}
 
       <div className="results-footer">
+        {!showMore && moreSuggestions.length > 0 && (
+          <button onClick={() => setShowMore(true)} className="button-secondary">
+            Show {moreSuggestions.length} more options
+          </button>
+        )}
         <button onClick={onStartOver} className="button-secondary">
           Start Over
         </button>

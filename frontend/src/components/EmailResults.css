@@ -208,3 +208,51 @@
     font-size: 20px;
   }
 }
+
+/* Concierge pitch banner */
+.concierge-pitch {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 720px;
+  margin: 0 auto 32px;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.95);
+  border-left: 4px solid #7c3aed;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.concierge-pitch .pitch-icon {
+  font-size: 1.4rem;
+  line-height: 1.4;
+}
+
+.concierge-pitch p {
+  margin: 0;
+  color: #374151;
+  font-size: 1rem;
+  line-height: 1.5;
+  text-align: left;
+}
+
+/* "Our pick" card */
+.email-card.pick-card {
+  position: relative;
+  border: 2px solid #7c3aed;
+  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.25);
+}
+
+.pick-badge {
+  position: absolute;
+  top: -12px;
+  left: 16px;
+  background: #7c3aed;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+}

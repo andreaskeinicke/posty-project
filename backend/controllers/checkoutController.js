@@ -1,5 +1,6 @@
 const stripeService = require('../services/stripeService');
 const { supabaseAdmin } = require('../config/supabase');
+const caseLogService = require('../services/caseLogService');
 
 /**
  * Create a Stripe checkout session
@@ -7,7 +8,7 @@ const { supabaseAdmin } = require('../config/supabase');
  */
 exports.createCheckoutSession = async (req, res) => {
   try {
-    const { domainName, domainPrice } = req.body;
+    const { domainName, domainPrice, caseId } = req.body;
     const userId = req.userId || null; // From optionalAuth middleware; null for guests
     const user = req.user || null;
 
@@ -41,8 +42,12 @@ exports.createCheckoutSession = async (req, res) => {
       userEmail: user?.email,
       domainName,
       domainPrice: domainPrice || 0,
-      sessionId
+      sessionId,
+      caseId
     });
+
+    // Learning loop: record which suggestion went to checkout
+    caseLogService.recordSelection(caseId, domainName, checkoutSession.sessionId);
 
     // Update questionnaire session with selected domain
     if (sessionId) {
@@ -201,17 +206,23 @@ exports.handleWebhook = async (req, res) => {
  * Handle checkout.session.completed event
  */
 async function handleCheckoutSessionCompleted(session) {
-  const { metadata, customer, subscription, amount_total } = session;
-  const { userId, domainName, questionnaireSessionId, domainPurchaseRequired } = metadata;
+  const { metadata, customer, amount_total } = session;
+  const { userId, domainName, questionnaireSessionId, domainPurchaseRequired, caseId } = metadata;
 
-  console.log(`✅ Checkout completed for user ${userId} - ${domainName}`);
+  // Guest checkouts carry userId 'guest' — not a real UUID, skip user-linked writes
+  const realUserId = userId && userId !== 'guest' ? userId : null;
+  const buyerEmail = session.customer_details?.email || session.customer_email || 'unknown';
+
+  console.log(`✅ Checkout completed for ${realUserId || `guest (${buyerEmail})`} - ${domainName}`);
 
   try {
-    // Update user with Stripe customer ID
-    await supabaseAdmin
-      .from('users')
-      .update({ stripe_customer_id: customer })
-      .eq('id', userId);
+    if (realUserId) {
+      // Update user with Stripe customer ID
+      await supabaseAdmin
+        .from('users')
+        .update({ stripe_customer_id: customer })
+        .eq('id', realUserId);
+    }
 
     // Mark questionnaire session as converted
     if (questionnaireSessionId) {
@@ -224,34 +235,45 @@ async function handleCheckoutSessionCompleted(session) {
         .eq('session_id', questionnaireSessionId);
     }
 
-    // Create transaction record
-    await supabaseAdmin
-      .from('transactions')
-      .insert({
-        user_id: userId,
-        type: 'subscription_payment',
-        amount: amount_total / 100, // Convert cents to dollars
-        currency: 'USD',
-        status: 'completed',
-        stripe_payment_intent_id: session.payment_intent
-      });
+    // Learning loop: the case converted to a purchase
+    if (caseId) {
+      await caseLogService.recordPurchase(caseId, domainName);
+    }
 
-    // If domain purchase required, create domain record (pending status)
-    if (domainPurchaseRequired === 'true') {
+    if (realUserId) {
+      // Create transaction record
       await supabaseAdmin
+        .from('transactions')
+        .insert({
+          user_id: realUserId,
+          type: 'subscription_payment',
+          amount: amount_total / 100, // Convert cents to dollars
+          currency: 'USD',
+          status: 'completed',
+          stripe_payment_intent_id: session.payment_intent
+        });
+    }
+
+    // If domain purchase required, create domain record (pending status).
+    // Concierge mode: this row (+ the case log) is the order feed we act on.
+    if (domainPurchaseRequired === 'true') {
+      const { error: domainError } = await supabaseAdmin
         .from('domains')
         .insert({
-          user_id: userId,
+          user_id: realUserId,
           domain_name: domainName,
-          status: 'pending_purchase', // Will be updated after Cloudflare purchase
+          status: 'pending_purchase',
           registered_at: null,
           expires_at: null
         });
+      if (domainError) {
+        // Never lose an order: the Stripe session itself remains source of truth
+        console.error(`🚨 ORDER NEEDS MANUAL ACTION: ${domainName} for ${buyerEmail} (${domainError.message})`);
+      } else {
+        console.log(`📝 Domain ${domainName} marked for purchase (buyer: ${buyerEmail})`);
+      }
 
-      console.log(`📝 Domain ${domainName} marked for purchase`);
-
-      // TODO: Trigger domain purchase via Cloudflare API
-      // This will be implemented in the next phase
+      // TODO Phase 2: trigger domainRegistrationService here behind AUTO_REGISTER flag
     }
 
   } catch (error) {

@@ -3,6 +3,11 @@ const emailGenerator = require('./emailGenerator');
 const domainRecommendationEngine = require('./domainRecommendationEngine');
 const domainAvailabilityService = require('./domainAvailabilityService');
 const aiRecommendationService = require('./aiRecommendationService');
+const caseLogService = require('./caseLogService');
+
+// First reveal size: a concierge curates, it doesn't dump the menu
+const SHORTLIST_SIZE = 8;
+const PER_CATEGORY_LIMIT = 2;
 
 class QuestionnaireService {
   /**
@@ -99,15 +104,18 @@ class QuestionnaireService {
    * @param {Object} profile - User profile from questionnaire
    * @returns {Promise<Object>} - Email suggestions with availability
    */
-  async generateSuggestions(profile) {
+  async generateSuggestions(profile, userId = null) {
     try {
       console.log('🎯 Generating email recommendations for:', profile.name);
 
       // 1. Generate candidates — AI engine first, rule engine as fallback
       let candidates;
+      let pitch = '';
       if (aiRecommendationService.isReady()) {
         try {
-          candidates = await aiRecommendationService.generateCandidates(profile);
+          const aiResult = await aiRecommendationService.generateCandidates(profile);
+          candidates = aiResult.candidates;
+          pitch = aiResult.pitch;
         } catch (aiError) {
           console.error('AI engine failed, falling back to rule engine:', aiError.message);
         }
@@ -119,6 +127,8 @@ class QuestionnaireService {
           prefix: firstName,
           category: d.category,
           priority: d.priority,
+          confidence: 3,
+          pick: false,
           note: d.description
         }));
         console.log(`📧 Rule engine generated ${candidates.length} candidates`);
@@ -145,28 +155,79 @@ class QuestionnaireService {
 
       console.log(`🎉 Found ${availableDomains.length} available domains`);
 
-      // 4. Group by category for structured response
-      const grouped = {};
+      // 4. Concierge curation: the pick + top items per category, small first reveal.
+      //    If the model's pick turned out taken, it re-picks among available
+      //    options with a fresh pitch (never pitch something they can't buy).
+      availableDomains.forEach(d => { d.pick = d.pick || false; });
+      let pickItem = availableDomains.find(d => d.pick) || null;
+      if (!pickItem && availableDomains.length > 0) {
+        pitch = '';
+        const rePick = await aiRecommendationService.choosePick(profile, availableDomains.slice(0, 12));
+        pickItem = rePick
+          ? availableDomains.find(d => `${d.prefix}@${d.domain}` === rePick.email.toLowerCase().trim())
+          : null;
+        if (pickItem) {
+          pitch = rePick.pitch;
+        } else {
+          pickItem = [...availableDomains].sort((a, b) => b.confidence - a.confidence)[0];
+        }
+        pickItem.pick = true;
+      }
+
+      const byCategory = {};
       availableDomains.forEach(d => {
-        (grouped[d.category] = grouped[d.category] || []).push(d);
+        (byCategory[d.category] = byCategory[d.category] || []).push(d);
+      });
+      Object.values(byCategory).forEach(list =>
+        list.sort((a, b) => (b.pick - a.pick) || (b.confidence - a.confidence))
+      );
+
+      const shortlist = [];
+      const categoryOrder = Object.keys(byCategory).sort(
+        (a, b) => (byCategory[a][0].priority || 9) - (byCategory[b][0].priority || 9)
+      );
+      for (const cat of categoryOrder) {
+        for (const item of byCategory[cat].slice(0, PER_CATEGORY_LIMIT)) {
+          if (shortlist.length < SHORTLIST_SIZE || item.pick) shortlist.push(item);
+        }
+      }
+      if (pickItem && !shortlist.includes(pickItem)) shortlist.unshift(pickItem);
+      const more = availableDomains.filter(d => !shortlist.includes(d));
+
+      const toSuggestion = d => ({
+        email: `${d.prefix}@${d.domain}`,
+        domain: d.domain,
+        category: d.category,
+        priority: d.priority,
+        price: d.price,
+        available: d.available,
+        rating: d.confidence,
+        pick: d.pick || false,
+        reasoning: d.note,
+        pattern: d.pattern || d.domain
+      });
+
+      const shownSuggestions = shortlist.map(toSuggestion);
+
+      // 5. Log the case for the learning loop (fire-and-forget, non-blocking)
+      const caseId = await caseLogService.logCase({
+        promptVersion: aiRecommendationService.promptVersion,
+        profile,
+        generated: enriched,
+        shown: shownSuggestions.map(s => s.email),
+        pitch,
+        pick: pickItem ? `${pickItem.prefix}@${pickItem.domain}` : null,
+        userId
       });
 
       return {
         success: true,
         profile: profile,
         suggestions: {
-          suggestions: availableDomains.map(d => ({
-            email: `${d.prefix}@${d.domain}`,
-            domain: d.domain,
-            category: d.category,
-            priority: d.priority,
-            price: d.price,
-            available: d.available,
-            rating: 5 - d.priority,
-            reasoning: d.note,
-            pattern: d.pattern || d.domain
-          })),
-          grouped: grouped,
+          caseId,
+          pitch,
+          suggestions: shownSuggestions,
+          more: more.map(toSuggestion),
           total: availableDomains.length,
           unavailable: unavailableDomains.length
         }

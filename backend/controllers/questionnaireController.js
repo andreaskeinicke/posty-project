@@ -41,8 +41,8 @@ exports.analyzeResponses = async (req, res) => {
     // Analyze responses
     const profile = questionnaireService.analyzeResponses(responses);
 
-    // Generate domain suggestions
-    const result = await questionnaireService.generateSuggestions(profile);
+    // Generate domain suggestions (userId links the learning-loop case when signed in)
+    const result = await questionnaireService.generateSuggestions(profile, req.userId || null);
 
     if (result.success) {
       res.json({

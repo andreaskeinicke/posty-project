@@ -10,7 +10,7 @@ import CheckoutSuccess from './components/CheckoutSuccess';
 import CheckoutCanceled from './components/CheckoutCanceled';
 
 // Configure axios base URL
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 axios.defaults.baseURL = API_BASE_URL;
 
 // Stripe redirects back to these paths after checkout (no router needed)

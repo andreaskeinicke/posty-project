@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -6,8 +7,11 @@ require('dotenv').config({ override: true }); // Force override environment vari
 
 const app = express();
 
-// Security middleware
-app.use(helmet());
+// Behind Railway/Cloudflare proxy: trust X-Forwarded-* so rate limiting sees real IPs
+app.set('trust proxy', 1);
+
+// Security middleware (CSP off: CRA inline runtime chunks would be blocked)
+app.use(helmet({ contentSecurityPolicy: false }));
 
 // CORS configuration
 app.use(cors({
@@ -41,6 +45,15 @@ app.use('/api/verification', require('./routes/verification'));
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'Posty API' });
+});
+
+// Serve the built frontend (single-host deploy: same origin as the API)
+const frontendBuild = path.join(__dirname, '..', 'frontend', 'build');
+app.use(express.static(frontendBuild));
+app.get(/^\/(?!api\/|health).*/, (req, res, next) => {
+  res.sendFile(path.join(frontendBuild, 'index.html'), err => {
+    if (err) next(); // no build present (local API-only dev) → fall through to 404
+  });
 });
 
 // Error handling middleware

@@ -15,16 +15,22 @@ Vercel project `posty-project` (GitHub-linked), Supabase "Posty Project"
 (schema applied, RLS on, restored & healthy), Stripe sandbox with product+price,
 Cloudflare account, Namecheap sandbox API, Anthropic API.
 
-## Phase 1 — Deployed staging (next work session)
+## Phase 1 — Deployed staging ✅ DONE 2026-07-27
 
-1. **Backend host:** Railway (Express + Stripe webhooks need a long-running
-   server; vercel.json only serves the SPA). Deploy `backend/`, set all env
-   vars from `.env`.
-2. **Frontend:** Vercel already builds from main. Set `REACT_APP_API_URL`
-   to the Railway URL. Delete duplicate Vercel project `posty-project-ybl6`.
-3. **DNS:** posty.club → Vercel; api.posty.club → Railway.
-4. **Stripe (test mode):** webhook endpoint → `https://api.posty.club/api/checkout/webhook`.
-5. Full test purchase with Stripe test card; confirm webhook writes to Supabase.
+Live at **https://posty.club** — single host on Railway (project `posty`,
+Hobby plan): Express serves the built frontend + API on one origin.
+- 26 env vars set on Railway; NODE_ENV=production
+- posty.club CNAME → bysv9gi7.up.railway.app (Cloudflare, DNS-only) + verify TXT;
+  old Namecheap parking A record removed
+- Stripe test webhook `we_1Txa7w7BIvz8pzUVqzDYF3Fn` → posty.club/api/checkout/webhook,
+  signing secret on Railway
+- `namecheap` npm package removed (native node-expat broke cloud builds);
+  namecheapService optional/disabled pending Phase 2 HTTP rewrite
+- Verified in prod: health, SPA routes, full AI round (pick+pitch+curation)
+- Open: SUPABASE_SERVICE_ROLE_KEY rotated → case logging + webhook DB writes
+  disabled until Andreas updates .env, then set on Railway
+- Cleanup: Vercel projects `posty-project` + `posty-project-ybl6` now redundant
+  (still auto-deploy from GitHub) — delete in Vercel dashboard
 
 ## Phase 2 — Fulfillment (the "we do everything for you" promise)
 

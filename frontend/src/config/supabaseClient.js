@@ -17,7 +17,11 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Make sure you have REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY in your .env file');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+// Never blank-screen the whole app over missing auth config — placeholders keep
+// the client constructible; auth features just fail with console errors.
+export const supabase = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'public-anon-key-missing', {
   auth: {
     autoRefreshToken: true,
     persistSession: true,

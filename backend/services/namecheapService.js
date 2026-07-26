@@ -1,4 +1,12 @@
-const Namecheap = require('namecheap');
+// Optional dependency: namecheap@0.0.1 needs a native build (node-expat) that
+// breaks cloud builds. Registration is manual (concierge mode) until the Phase 2
+// rewrite of this service on plain HTTP — see LAUNCH_PLAN.md.
+let Namecheap = null;
+try {
+  Namecheap = require('namecheap');
+} catch {
+  console.warn('⚠️  namecheap package not installed — registration service disabled (concierge mode)');
+}
 
 /**
  * Namecheap Domain Registration Service
@@ -16,6 +24,10 @@ class NamecheapService {
    * Initialize Namecheap client
    */
   _initialize() {
+    if (!Namecheap) {
+      return; // package not installed — service stays disabled
+    }
+
     const username = process.env.NAMECHEAP_API_USER;
     const apiKey = process.env.NAMECHEAP_API_KEY;
     const clientIp = process.env.NAMECHEAP_CLIENT_IP;

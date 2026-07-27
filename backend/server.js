@@ -47,10 +47,21 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'Posty API' });
 });
 
-// Serve the built frontend (single-host deploy: same origin as the API)
+// Serve the built frontend (single-host deploy: same origin as the API).
+// index.html must never be cached or users keep the old bundle after deploys;
+// hashed static assets can cache forever.
 const frontendBuild = path.join(__dirname, '..', 'frontend', 'build');
-app.use(express.static(frontendBuild));
+app.use(express.static(frontendBuild, {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('index.html')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    } else if (/\.(js|css|png|svg|woff2?)$/.test(filePath)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+  }
+}));
 app.get(/^\/(?!api\/|health).*/, (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.sendFile(path.join(frontendBuild, 'index.html'), err => {
     if (err) next(); // no build present (local API-only dev) → fall through to 404
   });

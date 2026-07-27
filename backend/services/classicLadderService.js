@@ -48,6 +48,9 @@ class ClassicLadderService {
     const seen = new Set();
     const add = (label, prefix, priority, confidence, note) => {
       if (!label || label.length < 3 || label.length > 20) return;
+      // H9: never repeat a name component across the @ (andreas@andreaskeinicke,
+      // akg@akg). Single letters are exempt (a@akeinicke reads fine).
+      if (prefix.length > 1 && label.includes(prefix)) return;
       for (const tld of tlds.slice(0, 3)) {
         const domain = `${label}${tld}`;
         const key = `${prefix}@${domain}`;
@@ -65,28 +68,33 @@ class ClassicLadderService {
       }
     };
 
-    // Rung 1 — surname domains: the corporate-IT look, owned personally
+    // Rung 1 — surname domains. H8: the domain carries the surname, the
+    // username carries the first name. andreas@keinicke.dk is the archetype.
     const surnames = [...new Set([last, middle].filter(s => s && s.length >= 3))];
     for (const surname of surnames) {
       add(surname, first, 1, 5, 'Your name as a company-style address - first name @ surname.');
-      add(surname, f, 1, 5, `Single letter, maximum brevity - ${f}@${surname}.`);
+      add(surname, f, 1, 4, `Single letter, maximum brevity - ${f}@${surname}.`);
     }
 
     // Rung 2 — first-name domain
     add(first, professional ? 'contact' : 'hey', 2, 4, 'Your first name as the domain itself.');
 
-    // Rung 3 — combined names (first+last, initial+last)
-    if (last && last !== first) {
-      add(`${f}${last}`, first, 3, 4, `Initial + surname - the classic scaling-company pattern.`);
-      if ((first + last).length <= 16) {
-        add(`${first}${last}`, professional ? 'mail' : 'hi', 3, 3, 'Full name as one domain - unmistakably you.');
-      }
+    // Rung 3 — initial + surname domains (akeinicke.dk)
+    for (const surname of surnames) {
+      add(`${f}${surname}`, first, 3, 4, 'Initial + surname - the classic scaling-company pattern.');
     }
 
-    // Rung 4 — initials (3+ letters only; shorter is registry-premium)
+    // Rung 4 — full-name domain: pairs with functional prefixes (H9 bans
+    // repeating the first name), mail@/hello@ read cleanest
+    if (last && last !== first && (first + last).length <= 16) {
+      add(`${first}${last}`, 'mail', 4, 3, 'Full name as one domain - mail@ keeps it clean.');
+      add(`${first}${last}`, 'hello', 4, 3, 'Full name as one domain - friendly and unmistakably you.');
+    }
+
+    // Rung 5 — initials domain (3+ letters only; shorter is registry-premium)
     const initials = [first, middle, last].filter(Boolean).map(p => p[0]).join('');
     if (initials.length >= 3) {
-      add(initials, professional ? first : 'hey', 4, 3, 'Your initials - short to say, short to type.');
+      add(initials, first, 5, 3, 'Your initials - short to say, short to type.');
     }
 
     return candidates;

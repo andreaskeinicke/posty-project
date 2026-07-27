@@ -22,3 +22,13 @@ Real name parts beat invented blends. Ladder made deterministic in code.)
 - H7: Single-letter prefixes are gold: a@keinicke.com says more with less than
   any handle. When a surname domain is available, always surface its
   single-letter variant.
+- H8: The domain carries the surname, the username carries the first name.
+  andreas@keinicke.dk is the archetype of a perfect address.
+- H9: Never repeat a name component across the @. andreas@andreaskeinicke.dk
+  and akg@akg.dk are weak; full-name domains pair with mail@/hello@/me@.
+- H10: Never suggest modifier domains (thekeinicke, keinicke-online,
+  officialandreas, anything with numbers). They read as branding exercises,
+  not a personal address.
+- H11: Family domains (keinicke.family, or surname.tld shared by the household
+  — andreas@, maria@, august@) are a strong creative angle when the surname
+  domain works; mention the shared-family upside in the note.

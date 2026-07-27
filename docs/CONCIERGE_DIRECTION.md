@@ -85,9 +85,26 @@ Cadence:
 - Unstuck entries (how often round one missed)
 - Time to first reveal (target <25s including availability checks)
 
+## v3 architecture (2026-07-27, after founder case #1)
+
+The lesson: the addresses people actually want most are **arithmetic on their
+real name parts**, not creativity. So the pipeline splits:
+
+1. **Classic ladder — code, instant** (`classicLadderService.js`): surname
+   domains with first-name and single-letter prefixes (a@keinicke.com), then
+   first-name domain, name combos, initials. Needs only name + country.
+2. **Availability check** on the ladder immediately (RDAP, parallel).
+3. **One fast AI call, thinking disabled** (`aiRecommendationService.js`):
+   pick + pitch among *confirmed-available* classics, plus ≤5 creative extras
+   from interests. Reasoning-off on sonnet-5 cut rounds from ~120s to ~4s.
+4. Curation: pick first, classics by rung, ≤2 creative in the first reveal.
+
+Speed target <25s: currently ~4-8s per round.
+
 ## Current implementation map
 
-- Prompt + curation: `backend/services/aiRecommendationService.js`
+- Classic ladder: `backend/services/classicLadderService.js`
+- AI pick/pitch/extras: `backend/services/aiRecommendationService.js`
 - Case logging: `backend/services/caseLogService.js` → `recommendation_cases`
-- Playbook (heuristics injected into prompt): `docs/CONCIERGE_PLAYBOOK.md`
+- Playbook (heuristics injected into prompt): `docs/CONCIERGE_PLAYBOOK.md` (v2)
 - Unstuck/refine endpoint: planned — `POST /api/questionnaire/refine`

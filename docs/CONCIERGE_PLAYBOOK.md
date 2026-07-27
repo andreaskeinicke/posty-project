@@ -27,8 +27,11 @@ Real name parts beat invented blends. Ladder made deterministic in code.)
 - H9: Never repeat a name component across the @. andreas@andreaskeinicke.dk
   and akg@akg.dk are weak; full-name domains pair with mail@/hello@/me@.
 - H10: Never suggest modifier domains (thekeinicke, keinicke-online,
-  officialandreas, anything with numbers). They read as branding exercises,
-  not a personal address.
+  officialandreas) or ARBITRARY numbers (andreaskeinicke123 — the gmail-
+  fallback look we're rescuing people from). Numbers with MEANING are
+  welcome in the creative tier: a founding year, a jersey number, something
+  the user mentioned (ak@97erne.dk, andreas17.dk for a 1917 club). The
+  note must say what the number means. Never in the classic pick.
 - H11: Family domains (keinicke.family, or surname.tld shared by the household
   — andreas@, maria@, august@) are a strong creative angle when the surname
   domain works; mention the shared-family upside in the note.

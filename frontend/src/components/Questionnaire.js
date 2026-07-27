@@ -369,16 +369,6 @@ function Questionnaire({ onComplete, onBack }) {
                 />
               </div>
 
-              <div className="input-group">
-                <label>Anything you love? <span className="optional">(optional — fuels the creative picks)</span></label>
-                <input
-                  type="text"
-                  value={answers.interests}
-                  onChange={(e) => setAnswers({ ...answers, interests: e.target.value })}
-                  placeholder="e.g., football, photography, your club..."
-                  className="text-input"
-                />
-              </div>
             </div>
           </div>
         );

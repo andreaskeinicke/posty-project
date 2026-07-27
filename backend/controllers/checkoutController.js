@@ -263,6 +263,7 @@ async function handleCheckoutSessionCompleted(session) {
           user_id: realUserId,
           domain_name: domainName,
           status: 'pending_purchase',
+          buyer_email: buyerEmail,
           registered_at: null,
           expires_at: null
         });

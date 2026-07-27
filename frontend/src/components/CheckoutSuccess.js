@@ -88,12 +88,12 @@ function CheckoutSuccess() {
               <span>Payment confirmed</span>
             </div>
             <div className="flex items-center gap-2 text-gray-700">
-              <span className="text-green-600 font-bold">✓</span>
-              <span>Domain registration initiated</span>
+              <span className="text-blue-600 font-bold">→</span>
+              <span>Next: we register your domain for you</span>
             </div>
             <div className="flex items-center gap-2 text-gray-700">
-              <span className="text-green-600 font-bold">✓</span>
-              <span>Email forwarding will be set up</span>
+              <span className="text-blue-600 font-bold">→</span>
+              <span>Then: we connect it to your Gmail, step by step with you</span>
             </div>
           </div>
 
@@ -102,8 +102,9 @@ function CheckoutSuccess() {
               What's Next?
             </p>
             <p className="text-sm text-blue-800">
-              You'll receive an email with instructions on how to set up your Gmail integration.
-              Your domain will be active within 24 hours.
+              A real human (yes, really) now registers your domain and emails you
+              within 24 hours with everything set up and simple Gmail instructions.
+              Nothing else to do right now.
             </p>
           </div>
 

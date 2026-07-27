@@ -122,3 +122,13 @@ Speed target <25s: currently ~4-8s per round.
 - Case logging: `backend/services/caseLogService.js` → `recommendation_cases`
 - Playbook (heuristics injected into prompt): `docs/CONCIERGE_PLAYBOOK.md` (v2)
 - Unstuck/refine endpoint: planned — `POST /api/questionnaire/refine`
+
+## Backlog (founder-parked, 2026-07-27)
+
+- **Results presentation**: evolve beyond the flat list — bring back light
+  category grouping inside the chat (classic / short / creative / family),
+  collapse same-base TLD variants into one row with a TLD picker. Founder:
+  "will need some work over time... various categories of recommendation."
+- **Visual design**: current UI is functional but dated. Andreas owns the
+  design pass (design-taste skill applies when that work starts); the chat
+  experience and API contract stay stable underneath.

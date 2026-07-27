@@ -2,7 +2,7 @@ const Anthropic = require('@anthropic-ai/sdk');
 const fs = require('fs');
 const path = require('path');
 
-const PROMPT_VERSION = 'v2.1';
+const PROMPT_VERSION = 'v3.0';
 
 // Playbook heuristics distilled from real cases (docs/CONCIERGE_PLAYBOOK.md).
 // Loaded once at boot; a playbook edit ships as a redeploy + version bump.
@@ -13,56 +13,22 @@ function loadPlaybook() {
       'utf8'
     );
     const heuristics = raw.split('\n').filter(line => /^- H\d+:/.test(line));
-    return heuristics.length ? heuristics.join('\n') : '';
+    return heuristics.length ? heuristics.join('\n') : '(none yet)';
   } catch {
-    return '';
+    return '(none yet)';
   }
 }
 
 /**
- * AI Recommendation Service (v2 engine)
+ * v3 concierge engine — AI half.
  *
- * Replaces the rule-based 11-category engine with a single Claude call.
- * The naming conventions live in the prompt as guidance, not as code.
- * See docs/RECOMMENDATION_MODEL_V2.md for the design.
+ * The classic name-pattern ladder is deterministic (classicLadderService);
+ * this service makes ONE fast call (thinking disabled — latency matters more
+ * than reasoning depth here) that:
+ *   1. picks the single best address among CONFIRMED-AVAILABLE classics,
+ *   2. writes the concierge pitch for it,
+ *   3. proposes up to 5 creative extras (the wildcard slot).
  */
-
-const CATEGORY_PRIORITY = {
-  'short-handle': 1,
-  'personal-brand': 2,
-  'professional': 3,
-  'location': 4,
-  'fun': 5
-};
-
-const SYSTEM_PROMPT = `You are Posty's email address designer. Given a person's details, you invent complete email addresses on domains they could buy, so they can finally replace their old hotmail/gmail address with one they're proud to say out loud.
-
-Conventions to apply (guidance, not rules — spin freely):
-- Short wins. Aim for 6-12 characters total for the domain. The address should be easy to say on the phone.
-- Do the name + initials arithmetic most people never think of: initials as the domain (ak.io), first name @ surname-domain (andreas@keinicke.dk), single letters where the TLD carries meaning, syllable handles (2+2 patterns like "anke", first syllables like "keini").
-- Corporate IT conventions read as professional: first@last.tld, f.last@, flast@. A personal address like andreas@keinicke.dk looks exactly like a company email — that's a feature.
-- The left side of the @ is free once you own the domain. Vary it: hello@, hi@, me@, you@, first-name@. Pick the prefix that makes each address sing.
-- Use the TLD as part of the word when it works (.me, .email, .io, country TLDs for locals). Never sacrifice pronounceability.
-- If interests/free text give you material, include 1-3 playful "fun" suggestions with a one-line rationale. Use your own knowledge for creative connections (clubs, bands, years, nicknames).
-- Only suggest plausibly registrable domains: avoid dictionary words and 1-3 char .com/.io (taken or premium). Prefer surname-based, handle-based and combination domains where availability odds are real.
-
-Categories (use exactly these ids): short-handle, personal-brand, professional, location, fun.
-
-Learned heuristics from real cases (follow these — they outrank the general guidance above):
-{{PLAYBOOK}}
-
-You are a concierge, not a search engine. Score every item with "confidence" 1-5:
-how strongly YOU would argue this exact person should pick it (5 = you'd say
-"take this one" to their face). Mark exactly ONE item "pick": true — your
-personal recommendation — and write a top-level "pitch": 1-2 sentences arguing
-for it with a reason the person likely hasn't thought of. Include one wildcard:
-a creative idea outside the safe patterns (category "fun", any confidence).
-
-Output: ONLY a JSON object, no prose, no markdown fences:
-{"pitch": "...", "items": [{"domain": "keinicke.dk", "prefix": "andreas", "category": "personal-brand", "confidence": 5, "pick": true, "note": "Your surname as your domain — reads like a company address."}, ...]}
-
-25-35 items. Notes max 12 words, concrete, selling the idea. Never repeat a domain.`;
-
 class AIRecommendationService {
   constructor() {
     this.client = process.env.ANTHROPIC_API_KEY
@@ -70,7 +36,7 @@ class AIRecommendationService {
       : null;
     this.model = process.env.CLAUDE_MODEL || 'claude-sonnet-5';
     this.promptVersion = PROMPT_VERSION;
-    this.systemPrompt = SYSTEM_PROMPT.replace('{{PLAYBOOK}}', loadPlaybook() || '(none yet)');
+    this.playbook = loadPlaybook();
   }
 
   isReady() {
@@ -78,147 +44,95 @@ class AIRecommendationService {
   }
 
   /**
-   * Generate email address candidates for a profile.
-   * @param {Object} profile - analyzed questionnaire profile (with _metadata)
-   * @returns {Promise<Object>} - { pitch, candidates: [{ domain, prefix, category, note, priority, confidence, pick }] }
+   * @param {Object} profile
+   * @param {Array} availableClassics - ladder candidates confirmed available
+   * @returns {Promise<{pickEmail: string|null, pitch: string, extras: Array}>}
    */
-  async generateCandidates(profile) {
-    if (!this.client) {
-      throw new Error('ANTHROPIC_API_KEY not configured');
-    }
+  async finishRound(profile, availableClassics) {
+    if (!this.client) throw new Error('ANTHROPIC_API_KEY not configured');
 
-    // Generous budget: Claude 5 models spend part of max_tokens on internal reasoning
+    const list = availableClassics
+      .map((c, i) => `${i + 1}. ${c.prefix}@${c.domain}`)
+      .join('\n');
+
+    const system = `You are Posty's email concierge: you help people replace their old hotmail/gmail with an address they're proud to say out loud.
+
+Taste rules (learned from real cases — follow strictly):
+${this.playbook}
+
+You will receive a person's details and a list of CONFIRMED-AVAILABLE classic addresses built from their real name. Do three things:
+1. "pick": choose the ONE address from the list you would tell them to take. Prefer real-name patterns (first@surname, single-letter@surname) over anything invented.
+2. "pitch": 1-2 sentences arguing for the pick with a reason they likely haven't thought of. Concrete, warm, no hype.
+3. "extras": up to 5 creative additions the classic ladder can't produce — only if their interests/free text give you real material. Reference what they actually said. Domain labels 4-15 chars, plausibly registrable (no dictionary words, no 1-3 char .com/.io). Empty array is fine.
+
+Reply with ONLY JSON, no prose:
+{"pick": "andreas@keinicke.dk", "pitch": "...", "extras": [{"domain": "gulsort.dk", "prefix": "andreas", "note": "max 12 words on why"}]}`;
+
     const response = await this.client.messages.create({
       model: this.model,
-      max_tokens: 12000,
-      system: this.systemPrompt,
-      messages: [{ role: 'user', content: this._buildUserPrompt(profile) }]
+      max_tokens: 1500,
+      thinking: { type: 'disabled' },
+      system,
+      messages: [{
+        role: 'user',
+        content: `${this._buildUserPrompt(profile)}\n\nConfirmed available:\n${list || '(none — suggest extras only, pick null)'}`
+      }]
     });
 
     const text = response.content
-      .filter(block => block.type === 'text')
-      .map(block => block.text)
+      .filter(b => b.type === 'text')
+      .map(b => b.text)
       .join('');
 
-    const result = this._parseCandidates(text);
-    console.log(`🤖 AI engine generated ${result.candidates.length} candidates (${this.model}, prompt ${this.promptVersion})`);
-    return result;
-  }
-
-  /**
-   * The model's original pick turned out unavailable: have it re-pick among
-   * the available candidates and write a fresh pitch. Cheap, fast call.
-   * @returns {Promise<{email: string, pitch: string}|null>}
-   */
-  async choosePick(profile, availableCandidates) {
-    if (!this.client || availableCandidates.length === 0) return null;
-    try {
-      const list = availableCandidates
-        .map(c => `${c.prefix}@${c.domain} (${c.category}: ${c.note})`)
-        .join('\n');
-      const response = await this.client.messages.create({
-        model: this.model,
-        max_tokens: 2000,
-        system: 'You are Posty\'s email concierge. Reply with ONLY a JSON object, no prose.',
-        messages: [{
-          role: 'user',
-          content: `${this._buildUserPrompt(profile)}\n\nThese addresses are confirmed available:\n${list}\n\nPick the ONE you would tell this person to take, with a 1-2 sentence pitch giving a reason they likely haven't thought of. Reply: {"email": "...", "pitch": "..."}`
-        }]
-      });
-      const text = response.content.filter(b => b.type === 'text').map(b => b.text).join('');
-      const match = text.match(/\{[\s\S]*\}/);
-      if (!match) return null;
-      const parsed = JSON.parse(match[0]);
-      if (typeof parsed.email !== 'string' || typeof parsed.pitch !== 'string') return null;
-      return parsed;
-    } catch (error) {
-      console.warn('choosePick failed (non-fatal):', error.message);
-      return null;
-    }
+    return this._parse(text);
   }
 
   _buildUserPrompt(profile) {
     const meta = profile._metadata || {};
     const lines = [`Full name: ${profile.name}`];
-
-    if (meta.normalizedName && meta.normalizedName !== profile.name?.toLowerCase()) {
-      lines.push(`ASCII-normalized name (use this in domains): ${meta.normalizedName}`);
-    }
-    if (meta.firstName) lines.push(`First name: ${meta.firstName}`);
-    if (meta.middleName) lines.push(`Middle name: ${meta.middleName}`);
-    if (meta.lastName) lines.push(`Last name: ${meta.lastName}`);
-    if (meta.handles?.length) lines.push(`Pre-computed handles: ${meta.handles.join(', ')}`);
     if (profile.type) lines.push(`Use case: ${profile.type}`);
     if (meta.country) lines.push(`Country: ${meta.country}`);
-    if (meta.city) lines.push(`City: ${meta.city}${meta.cityAbbreviation ? ` (${meta.cityAbbreviation})` : ''}`);
-    if (meta.tlds?.length) lines.push(`Preferred TLDs (prioritize, but add others that fit): ${meta.tlds.join(', ')}`);
+    if (meta.city) lines.push(`City: ${meta.city}`);
     if (meta.professions?.length || profile.profession) {
       lines.push(`Profession(s): ${(meta.professions || [profile.profession]).filter(Boolean).join(', ')}`);
     }
     if (meta.interests?.length) lines.push(`Interests: ${meta.interests.join(', ')}`);
-    if (profile.values) lines.push(`About them (free text): ${profile.values}`);
-    if (profile.inspiration?.specialMeaning) lines.push(`Special meaning: ${profile.inspiration.specialMeaning}`);
-    if (profile.inspiration?.avoid) lines.push(`Avoid: ${profile.inspiration.avoid}`);
-
+    if (profile.values) lines.push(`About them: ${profile.values}`);
     return lines.join('\n');
   }
 
-  _parseCandidates(text) {
-    // Pitch: parse independently so a truncated items array can't lose it
-    const pitchMatch = text.match(/"pitch"\s*:\s*"((?:[^"\\]|\\.)*)"/);
-    const pitch = pitchMatch ? JSON.parse(`"${pitchMatch[1]}"`) : '';
+  _parse(text) {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('AI response contained no JSON object');
+    const parsed = JSON.parse(match[0]);
 
-    // Items array: from the first '[' after "items" (fallback: first '[' anywhere)
-    const itemsKey = text.indexOf('"items"');
-    const start = text.indexOf('[', itemsKey === -1 ? 0 : itemsKey);
-    if (start === -1) {
-      throw new Error('AI response contained no JSON array');
-    }
-    let end = text.lastIndexOf(']');
-    let jsonText;
-    if (end > start) {
-      jsonText = text.slice(start, end + 1);
-    } else {
-      // Truncated response: salvage all complete items up to the last '}'
-      const lastBrace = text.lastIndexOf('}');
-      if (lastBrace <= start) {
-        throw new Error('AI response contained no JSON array');
-      }
-      jsonText = text.slice(start, lastBrace + 1) + ']';
-    }
-
-    const parsed = JSON.parse(jsonText);
+    const extras = [];
     const seen = new Set();
-    const candidates = [];
-
-    for (const item of parsed) {
+    for (const item of parsed.extras || []) {
       if (!item || typeof item.domain !== 'string') continue;
       const domain = item.domain.toLowerCase().trim();
-      // basic sanity: label.tld, ascii, no spaces
       if (!/^[a-z0-9][a-z0-9-]*\.[a-z.]{2,12}$/.test(domain)) continue;
-      // 1-2 char labels are registry-premium (RDAP says free, price says $$$$) — skip
-      if (domain.split('.')[0].length < 3) continue;
+      if (domain.split('.')[0].length < 4) continue; // registry-premium trap
       if (seen.has(domain)) continue;
       seen.add(domain);
-
-      const category = CATEGORY_PRIORITY[item.category] ? item.category : 'personal-brand';
-      candidates.push({
+      extras.push({
         domain,
         prefix: (typeof item.prefix === 'string' && /^[a-z0-9._-]+$/i.test(item.prefix.trim()))
           ? item.prefix.trim().toLowerCase()
           : 'hello',
-        category,
-        priority: CATEGORY_PRIORITY[category],
-        confidence: Number.isFinite(item.confidence) ? Math.min(5, Math.max(1, item.confidence)) : 3,
-        pick: item.pick === true,
-        note: typeof item.note === 'string' ? item.note : ''
+        category: 'creative',
+        priority: 5,
+        confidence: 3,
+        note: typeof item.note === 'string' ? item.note : '',
+        pattern: domain
       });
     }
 
-    if (candidates.length === 0) {
-      throw new Error('AI response parsed but contained no valid candidates');
-    }
-    return { pitch, candidates };
+    return {
+      pickEmail: typeof parsed.pick === 'string' ? parsed.pick.toLowerCase().trim() : null,
+      pitch: typeof parsed.pitch === 'string' ? parsed.pitch : '',
+      extras
+    };
   }
 }
 

@@ -3,7 +3,9 @@
 Distilled heuristics from real cases, injected verbatim into the recommendation
 prompt (see `aiRecommendationService.js`). Change = prompt version bump.
 
-**Version: v1** (2026-07-25 — pre-traffic seed heuristics, from founder taste)
+**Version: v2** (2026-07-27 — founder case #1: pick was `andreas@keini.dk`, an
+invented syllable blend; founder wanted `a@keinicke.com` / `andreas@keinicke.dk`.
+Real name parts beat invented blends. Ladder made deterministic in code.)
 
 - H1: Locals trust country TLDs. For Danish users lead with .dk over .io/.me.
 - H2: A surname domain (first@last.tld) is the single most-underrated pattern —
@@ -14,3 +16,9 @@ prompt (see `aiRecommendationService.js`). Change = prompt version bump.
   akg.io = one slot, mention the alternative TLD in the note).
 - H5: The fun pick must reference something the user actually said, never
   generic wordplay on their name.
+- H6: REAL name parts beat invented syllable blends ("keini", "ankegu") every
+  time. The pick must be a real-name pattern when one is available; blends are
+  wildcard-tail material only, never the recommendation.
+- H7: Single-letter prefixes are gold: a@keinicke.com says more with less than
+  any handle. When a surname domain is available, always surface its
+  single-letter variant.

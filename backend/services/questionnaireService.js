@@ -1,13 +1,12 @@
 const claudeService = require('./claudeService');
 const emailGenerator = require('./emailGenerator');
-const domainRecommendationEngine = require('./domainRecommendationEngine');
+const classicLadderService = require('./classicLadderService');
 const domainAvailabilityService = require('./domainAvailabilityService');
 const aiRecommendationService = require('./aiRecommendationService');
 const caseLogService = require('./caseLogService');
 
 // First reveal size: a concierge curates, it doesn't dump the menu
 const SHORTLIST_SIZE = 8;
-const PER_CATEGORY_LIMIT = 2;
 
 class QuestionnaireService {
   /**
@@ -100,99 +99,82 @@ class QuestionnaireService {
   }
 
   /**
-   * Generate email suggestions using 10-category recommendation engine
-   * @param {Object} profile - User profile from questionnaire
-   * @returns {Promise<Object>} - Email suggestions with availability
+   * v3 concierge pipeline: instant classic name-pattern ladder (code) →
+   * availability check → one fast AI call for pick + pitch + creative extras.
+   * See docs/CONCIERGE_DIRECTION.md.
    */
   async generateSuggestions(profile, userId = null) {
     try {
-      console.log('🎯 Generating email recommendations for:', profile.name);
+      const t0 = Date.now();
+      console.log('🎯 v3 round for:', profile.name);
 
-      // 1. Generate candidates — AI engine first, rule engine as fallback
-      let candidates;
-      let pitch = '';
-      if (aiRecommendationService.isReady()) {
-        try {
-          const aiResult = await aiRecommendationService.generateCandidates(profile);
-          candidates = aiResult.candidates;
-          pitch = aiResult.pitch;
-        } catch (aiError) {
-          console.error('AI engine failed, falling back to rule engine:', aiError.message);
-        }
-      }
-      if (!candidates || candidates.length === 0) {
-        const firstName = (profile.name || 'you').split(' ')[0].toLowerCase();
-        candidates = domainRecommendationEngine.generateRecommendations(profile).map(d => ({
-          domain: d.domain,
-          prefix: firstName,
-          category: d.category,
-          priority: d.priority,
-          confidence: 3,
-          pick: false,
-          note: d.description
-        }));
-        console.log(`📧 Rule engine generated ${candidates.length} candidates`);
-      }
+      // 1. Classic ladder — deterministic, instant, real name parts only
+      const ladder = classicLadderService.generate(profile);
+      console.log(`🪜 Ladder: ${ladder.length} classic candidates`);
 
-      // 2. Check availability for all unique domains in parallel
-      const domainsToCheck = [...new Set(candidates.map(c => c.domain))];
-      console.log(`🔍 Checking availability for ${domainsToCheck.length} domains...`);
-      const availabilityResults = await domainAvailabilityService.checkMultipleDomains(domainsToCheck);
-
+      // 2. Availability for the ladder (fast, parallel)
+      const ladderResults = await domainAvailabilityService.checkMultipleDomains(
+        [...new Set(ladder.map(c => c.domain))], 12
+      );
       const domainMap = {};
-      availabilityResults.forEach(d => {
-        domainMap[d.domain] = d;
-      });
+      ladderResults.forEach(d => { domainMap[d.domain] = d; });
 
-      // 3. Merge and split available / unavailable
-      const enriched = candidates.map(c => ({
+      const enrich = c => ({
         ...c,
         available: domainMap[c.domain]?.available || false,
         price: domainMap[c.domain]?.price || 0
-      }));
-      const availableDomains = enriched.filter(d => d.available);
+      });
+      let enriched = ladder.map(enrich);
+      let availableDomains = enriched.filter(d => d.available);
+      console.log(`✅ Ladder available: ${availableDomains.length} (${Date.now() - t0}ms)`);
+
+      // 3. One fast AI call: pick + pitch among confirmed-available, plus extras
+      let pitch = '';
+      let pickItem = null;
+      if (aiRecommendationService.isReady()) {
+        try {
+          const ai = await aiRecommendationService.finishRound(profile, availableDomains.slice(0, 15));
+          pitch = ai.pitch;
+          if (ai.pickEmail) {
+            pickItem = availableDomains.find(d => `${d.prefix}@${d.domain}` === ai.pickEmail) || null;
+          }
+          // Check the creative extras' availability (small batch, fast)
+          if (ai.extras.length > 0) {
+            const extraResults = await domainAvailabilityService.checkMultipleDomains(
+              [...new Set(ai.extras.map(c => c.domain))], 12
+            );
+            extraResults.forEach(d => { domainMap[d.domain] = d; });
+            const availableExtras = ai.extras.map(enrich).filter(d => d.available);
+            enriched = enriched.concat(ai.extras.map(enrich));
+            availableDomains = availableDomains.concat(availableExtras);
+          }
+          console.log(`🤖 AI pick+extras done (${Date.now() - t0}ms, prompt ${aiRecommendationService.promptVersion})`);
+        } catch (aiError) {
+          console.error('AI finishing call failed (ladder still serves):', aiError.message);
+        }
+      }
+      if (!pickItem && availableDomains.length > 0) {
+        // No AI or its pick was invalid: highest-rung classic wins, no pitch
+        pitch = pitch || '';
+        pickItem = [...availableDomains].sort(
+          (a, b) => (a.priority - b.priority) || (b.confidence - a.confidence)
+        )[0];
+      }
+      availableDomains.forEach(d => { d.pick = d === pickItem; });
+
       const unavailableDomains = enriched.filter(d => !d.available);
 
-      console.log(`🎉 Found ${availableDomains.length} available domains`);
-
-      // 4. Concierge curation: the pick + top items per category, small first reveal.
-      //    If the model's pick turned out taken, it re-picks among available
-      //    options with a fresh pitch (never pitch something they can't buy).
-      availableDomains.forEach(d => { d.pick = d.pick || false; });
-      let pickItem = availableDomains.find(d => d.pick) || null;
-      if (!pickItem && availableDomains.length > 0) {
-        pitch = '';
-        const rePick = await aiRecommendationService.choosePick(profile, availableDomains.slice(0, 12));
-        pickItem = rePick
-          ? availableDomains.find(d => `${d.prefix}@${d.domain}` === rePick.email.toLowerCase().trim())
-          : null;
-        if (pickItem) {
-          pitch = rePick.pitch;
-        } else {
-          pickItem = [...availableDomains].sort((a, b) => b.confidence - a.confidence)[0];
-        }
-        pickItem.pick = true;
-      }
-
-      const byCategory = {};
-      availableDomains.forEach(d => {
-        (byCategory[d.category] = byCategory[d.category] || []).push(d);
-      });
-      Object.values(byCategory).forEach(list =>
-        list.sort((a, b) => (b.pick - a.pick) || (b.confidence - a.confidence))
+      // 4. Curation: pick first, then classics by rung, then creative tail
+      const sorted = [...availableDomains].sort(
+        (a, b) => (b.pick - a.pick) || (a.priority - b.priority) || (b.confidence - a.confidence)
       );
-
-      const shortlist = [];
-      const categoryOrder = Object.keys(byCategory).sort(
-        (a, b) => (byCategory[a][0].priority || 9) - (byCategory[b][0].priority || 9)
-      );
-      for (const cat of categoryOrder) {
-        for (const item of byCategory[cat].slice(0, PER_CATEGORY_LIMIT)) {
-          if (shortlist.length < SHORTLIST_SIZE || item.pick) shortlist.push(item);
-        }
-      }
+      const classics = sorted.filter(d => d.category === 'classic');
+      const creative = sorted.filter(d => d.category === 'creative');
+      const shortlist = [...classics.slice(0, SHORTLIST_SIZE - 2), ...creative.slice(0, 2)]
+        .sort((a, b) => (b.pick - a.pick) || (a.priority - b.priority));
       if (pickItem && !shortlist.includes(pickItem)) shortlist.unshift(pickItem);
       const more = availableDomains.filter(d => !shortlist.includes(d));
+      console.log(`🎉 Round complete: ${shortlist.length} shown, ${more.length} more (${Date.now() - t0}ms)`);
 
       const toSuggestion = d => ({
         email: `${d.prefix}@${d.domain}`,

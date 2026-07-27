@@ -96,7 +96,8 @@ Reply with ONLY JSON, no prose:
     if (meta.professions?.length || profile.profession) {
       lines.push(`Profession(s): ${(meta.professions || [profile.profession]).filter(Boolean).join(', ')}`);
     }
-    if (meta.interests?.length) lines.push(`Interests: ${meta.interests.join(', ')}`);
+    const interests = meta.interests || meta.interestsList || profile.keywords || [];
+    if (interests.length) lines.push(`Interests: ${interests.join(', ')}`);
     if (profile.values) lines.push(`About them: ${profile.values}`);
     return lines.join('\n');
   }

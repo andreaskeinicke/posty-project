@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import './Questionnaire.css';
 
 // Character normalization map for special characters
@@ -63,54 +62,33 @@ function Questionnaire({ onComplete, onBack }) {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Calculate total steps dynamically
-  const totalSteps = () => {
-    // Steps: 1(preference) + 2(name) + 3(use case) + 4(location) + 5(profession - conditional) + 6(interests)
-    // Interests is always step 6, but we skip step 5 if not work-related
-    // So total is always 6, but the progress shows actual step number
-    return 6;
-  };
+  // v3: three steps — name, purpose, location (+optional interests inline).
+  // The classic ladder needs only name + country; everything else is garnish.
+  const totalSteps = () => 3;
 
   const validateStep = () => {
     const newErrors = {};
 
     switch(currentStep) {
-      case 1: // Domain preference
-        if (!answers.domainPreference) {
-          newErrors.domainPreference = 'Please select an option';
-        }
-        break;
-
-      case 2: // Full name
+      case 1: // Full name
         if (!answers.fullName || answers.fullName.trim().length < 2) {
           newErrors.fullName = 'Please enter your full name';
         }
         break;
 
-      case 3: // Primary use case
+      case 2: // Primary use case
         if (!answers.primaryUseCase) {
           newErrors.primaryUseCase = 'Please select an option';
         }
         break;
 
-      case 4: // Location
+      case 3: // Location (+optional interests)
         if (!answers.country || answers.country.trim().length < 2) {
           newErrors.country = 'Please enter your country';
         }
         break;
 
-      case 5: // Profession (conditional)
-        const needsProfession = answers.primaryUseCase === 'work' || answers.primaryUseCase === 'side_hustle';
-        if (needsProfession && (!answers.profession || answers.profession.trim().length < 2)) {
-          newErrors.profession = 'Please enter your profession';
-        }
-        break;
-
-      case 6: // Interests (optional - no validation needed)
-        break;
-
       default:
-        // No validation for unknown steps
         break;
     }
 
@@ -216,39 +194,16 @@ function Questionnaire({ onComplete, onBack }) {
     if (isLastStep) {
       await handleSubmit();
     } else {
-      // Skip profession step if not work-related
-      if (currentStep === 4) {
-        const needsProfession = answers.primaryUseCase === 'work' || answers.primaryUseCase === 'side_hustle';
-        if (!needsProfession) {
-          setCurrentStep(6); // Skip to interests
-        } else {
-          setCurrentStep(currentStep + 1);
-        }
-      } else {
-        setCurrentStep(currentStep + 1);
-      }
+      setCurrentStep(currentStep + 1);
     }
   };
 
   const handleBack = () => {
     if (currentStep === 1) {
       onBack();
-    } else if (currentStep === 6) {
-      // Coming back from interests - check if we should skip profession
-      const needsProfession = answers.primaryUseCase === 'work' || answers.primaryUseCase === 'side_hustle';
-      if (!needsProfession) {
-        setCurrentStep(4); // Go back to location
-      } else {
-        setCurrentStep(currentStep - 1);
-      }
     } else {
       setCurrentStep(currentStep - 1);
     }
-  };
-
-  const handleSkipInterests = () => {
-    setAnswers({ ...answers, interests: '' });
-    handleSubmit();
   };
 
   const handleSubmit = async () => {
@@ -256,28 +211,6 @@ function Questionnaire({ onComplete, onBack }) {
     console.log('Submitting questionnaire with answers:', answers);
 
     try {
-      // Check if user wants a specific domain
-      if (answers.domainPreference === 'specific_domain') {
-        // Check domain availability
-        const response = await axios.post('/api/domains/check', {
-          domain: answers.specificDomain
-        });
-
-        if (response.data.available) {
-          onComplete({
-            type: 'specific_domain',
-            domain: answers.specificDomain,
-            pricing: response.data.pricing
-          });
-        } else {
-          // Show alternatives
-          onComplete({
-            type: 'specific_domain_unavailable',
-            requestedDomain: answers.specificDomain,
-            alternatives: response.data.alternatives
-          });
-        }
-      } else {
         // Parse and process data for recommendation engine
         const { firstName, middleName, lastName } = parseName(answers.fullName);
         const preferredName = normalizeName(firstName);
@@ -331,7 +264,6 @@ function Questionnaire({ onComplete, onBack }) {
 
         // Pass the request data to App.js which will call the API
         onComplete({ responses: requestData });
-      }
     } catch (error) {
       console.error('Error submitting questionnaire:', error);
       console.error('Error details:', error.response?.data || error.message);
@@ -344,7 +276,7 @@ function Questionnaire({ onComplete, onBack }) {
 
   const renderStep = () => {
     // Safety check - if somehow we get to an invalid step, show a loading state
-    if (currentStep < 1 || currentStep > 6) {
+    if (currentStep < 1 || currentStep > 3) {
       return (
         <div className="question-step">
           <h2 className="question-title">Processing...</h2>
@@ -355,51 +287,6 @@ function Questionnaire({ onComplete, onBack }) {
 
     switch(currentStep) {
       case 1:
-        return (
-          <div className="question-step">
-            <h2 className="question-title">How would you like to start?</h2>
-
-            <div className="choice-buttons">
-              <button
-                className={`choice-button ${answers.domainPreference === 'specific_domain' ? 'selected' : ''}`}
-                onClick={() => setAnswers({ ...answers, domainPreference: 'specific_domain' })}
-              >
-                <div className="choice-icon">🎯</div>
-                <div className="choice-text">
-                  <div className="choice-label">I have a specific domain in mind</div>
-                  <div className="choice-description">Check if your dream domain is available</div>
-                </div>
-              </button>
-
-              <button
-                className={`choice-button ${answers.domainPreference === 'help_find' ? 'selected' : ''}`}
-                onClick={() => setAnswers({ ...answers, domainPreference: 'help_find' })}
-              >
-                <div className="choice-icon">✨</div>
-                <div className="choice-text">
-                  <div className="choice-label">Help me find my dream email address</div>
-                  <div className="choice-description">Get personalized recommendations</div>
-                </div>
-              </button>
-            </div>
-
-            {answers.domainPreference === 'specific_domain' && (
-              <div className="specific-domain-input">
-                <input
-                  type="text"
-                  value={answers.specificDomain}
-                  onChange={(e) => setAnswers({ ...answers, specificDomain: e.target.value })}
-                  placeholder="yourdomain.com"
-                  className="text-input"
-                />
-              </div>
-            )}
-
-            {errors.domainPreference && <div className="error-message">{errors.domainPreference}</div>}
-          </div>
-        );
-
-      case 2:
         return (
           <div className="question-step">
             <h2 className="question-title">What's your full name?</h2>
@@ -423,7 +310,7 @@ function Questionnaire({ onComplete, onBack }) {
           </div>
         );
 
-      case 3:
+      case 2:
         return (
           <div className="question-step">
             <h2 className="question-title">What will you primarily use this email for?</h2>
@@ -452,10 +339,10 @@ function Questionnaire({ onComplete, onBack }) {
           </div>
         );
 
-      case 4:
+      case 3:
         return (
           <div className="question-step">
-            <h2 className="question-title">Where do you live?</h2>
+            <h2 className="question-title">Where are you based?</h2>
 
             <div className="location-inputs">
               <div className="input-group">
@@ -481,49 +368,17 @@ function Questionnaire({ onComplete, onBack }) {
                   className="text-input"
                 />
               </div>
-            </div>
-          </div>
-        );
 
-      case 5:
-        return (
-          <div className="question-step">
-            <h2 className="question-title">What's your profession or industry?</h2>
-
-            <input
-              type="text"
-              value={answers.profession}
-              onChange={(e) => setAnswers({ ...answers, profession: e.target.value })}
-              placeholder="e.g., Software Developer, Marketing Consultant"
-              className="text-input large"
-              autoFocus
-            />
-
-            {errors.profession && <div className="error-message">{errors.profession}</div>}
-
-            <div className="helper-text">
-              You can list multiple (e.g., "founder and consultant")
-            </div>
-          </div>
-        );
-
-      case 6:
-        return (
-          <div className="question-step">
-            <h2 className="question-title">Any hobbies or interests you'd like reflected?</h2>
-            <p className="question-subtitle">Optional - but it helps us get creative!</p>
-
-            <input
-              type="text"
-              value={answers.interests}
-              onChange={(e) => setAnswers({ ...answers, interests: e.target.value })}
-              placeholder="e.g., photography, sailing, football, tech"
-              className="text-input large"
-              autoFocus
-            />
-
-            <div className="helper-text">
-              Separate multiple interests with commas
+              <div className="input-group">
+                <label>Anything you love? <span className="optional">(optional — fuels the creative picks)</span></label>
+                <input
+                  type="text"
+                  value={answers.interests}
+                  onChange={(e) => setAnswers({ ...answers, interests: e.target.value })}
+                  placeholder="e.g., football, photography, your club..."
+                  className="text-input"
+                />
+              </div>
             </div>
           </div>
         );
@@ -566,16 +421,6 @@ function Questionnaire({ onComplete, onBack }) {
           </button>
 
           <div className="nav-right">
-            {currentStep === 6 && (
-              <button
-                onClick={handleSkipInterests}
-                className="nav-button tertiary"
-                disabled={isSubmitting}
-              >
-                Skip
-              </button>
-            )}
-
             <button
               onClick={handleNext}
               className="nav-button primary"

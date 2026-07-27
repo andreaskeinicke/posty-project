@@ -85,6 +85,20 @@ Cadence:
 - Unstuck entries (how often round one missed)
 - Time to first reveal (target <25s including availability checks)
 
+## Founder direction 2026-07-27 (post test-purchase)
+
+1. **Post-purchase = confidence.** The buyer must immediately understand they
+   bought a *working email in their own Gmail*, not a domain. Handholding is
+   the product: explicit journey (registered → address created → connected to
+   YOUR Gmail), an email at every step, nothing for them to figure out alone.
+   Success page copy is the stopgap; Phase 2 (Resend emails + status page) is
+   the real thing.
+2. **The finder is a conversation, not a form.** Chat interface: Posty asks,
+   the user answers in bubbles (text + quick-reply chips), results appear
+   in-conversation with the pitch as a Posty message, refinement happens by
+   replying. The v2 chat prototype was right about the feel; v3 has the
+   engine to back it.
+
 ## v3 architecture (2026-07-27, after founder case #1)
 
 The lesson: the addresses people actually want most are **arithmetic on their

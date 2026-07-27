@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import axios from 'axios';
 import { supabase } from './config/supabaseClient';
-import Questionnaire from './components/Questionnaire';
+import ChatFinder from './components/ChatFinder';
 import EmailResults from './components/EmailResults';
 import SignupForm from './components/Auth/SignupForm';
 import LoginForm from './components/Auth/LoginForm';
@@ -60,33 +60,6 @@ function App() {
   const handleStartQuestionnaire = () => {
     // Always go to questionnaire first - signup happens later when they buy
     setView('questionnaire');
-  };
-
-  const handleQuestionnaireComplete = async (data) => {
-    setView('generating');
-
-    try {
-      // Get user session for auth
-      const { data: { session } } = await supabase.auth.getSession();
-
-      // Call backend to generate deterministic email suggestions
-      const response = await axios.post('/api/questionnaire/analyze', {
-        responses: data.responses || data
-      }, {
-        headers: session ? {
-          'Authorization': `Bearer ${session.access_token}`
-        } : {}
-      });
-
-      console.log('Email suggestions received:', response.data);
-      // Extract suggestions from response
-      setEmailSuggestions(response.data.suggestions || response.data);
-      setView('results');
-    } catch (error) {
-      console.error('Error generating suggestions:', error);
-      alert('Failed to generate email suggestions. Please try again.');
-      setView('questionnaire');
-    }
   };
 
   const handleStartOver = () => {
@@ -211,10 +184,7 @@ function App() {
   // Questionnaire View
   if (view === 'questionnaire') {
     return (
-      <Questionnaire
-        onComplete={handleQuestionnaireComplete}
-        onBack={handleStartOver}
-      />
+      <ChatFinder onBack={handleStartOver} />
     );
   }
 

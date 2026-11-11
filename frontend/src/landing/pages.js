@@ -17,7 +17,7 @@ export function HowItWorks() {
   ];
   return (
     <>
-      <PageHead kicker="How it works" title={<>From "hi" to <em className="s">hello@you.com</em></>} sub="Six short steps. You do three of them, and none of yours involve settings or records." />
+      <PageHead kicker="How it works" title={<>From “hi” to <em className="s">hello@you.com</em></>} sub="Six short steps. You do three of them, and none of yours involve settings or records." />
       <section className="band tight">
         <div className="wrap">
           <ol className="timeline">

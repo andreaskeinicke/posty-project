@@ -93,7 +93,8 @@
 .pl .recent{font-size:13px;color:var(--slate)}
 .pl .recent-chip{border:1px dashed #C9D6EA;background:rgba(255,255,255,.7);color:var(--ink);border-radius:999px;padding:4px 11px;font-size:13px;text-decoration:none}
 .pl .recent-chip:hover{border-style:solid;border-color:var(--blue)}
-.pl .alt{margin-top:14px;font-size:14px;color:var(--slate)}
+.pl .alt{margin-top:14px;font-size:14px;color:var(--slate);display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px 0}
+@media (max-width:540px){.pl .dot-sep{flex-basis:100%;height:0;overflow:hidden}}
 .pl .alt>button{background:none;border:0;padding:0;color:var(--blue);font-weight:600}
 .pl .dot-sep{margin:0 8px;color:#A9B3C4}
 @media (max-width:540px){.pl .finder{flex-wrap:wrap}.pl .finder .at{display:none}.pl .finder .btn{width:100%}}

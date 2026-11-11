@@ -41,6 +41,7 @@ app.use('/api/domains', require('./routes/domains'));
 app.use('/api/questionnaire', require('./routes/questionnaire'));
 app.use('/api/checkout', require('./routes/checkout'));
 app.use('/api/verification', require('./routes/verification'));
+app.use('/api/suggest', require('./routes/suggest'));
 
 // Health check
 app.get('/health', (req, res) => {

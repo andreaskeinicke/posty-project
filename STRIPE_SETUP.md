@@ -49,7 +49,7 @@ NODE_ENV=development
 
 # Stripe Configuration
 STRIPE_SECRET_KEY=sk_test_YOUR_SECRET_KEY_HERE
-STRIPE_WEBHOOK_SECRET=whsec_457e93c153b8079a9b1c064a77066fd9dcc7e23b79c13a8436464567f56aaf13
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret_here
 
 # Stripe Product Price ID (from Step 1)
 STRIPE_PRICE_ID=price_YOUR_PRICE_ID_HERE

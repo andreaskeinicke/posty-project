@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './App.css';
 import axios from 'axios';
 import ChatFinder from './components/ChatFinder';
 import EmailResults from './components/EmailResults';
 import CheckoutSuccess from './components/CheckoutSuccess';
 import CheckoutCanceled from './components/CheckoutCanceled';
-import Landing from './landing/Landing';
+import Site from './landing/Site';
 import { landingApi } from './landing/api';
 
 // Configure axios base URL
@@ -25,22 +25,32 @@ function Root() {
 }
 
 function App() {
-  const [view, setView] = useState('landing'); // landing, questionnaire, results
+  // /start opens the guided chat finder directly (linked from the site)
+  const [view, setView] = useState(window.location.pathname === '/start' ? 'questionnaire' : 'landing'); // landing, questionnaire, results
   const [emailSuggestions, setEmailSuggestions] = useState(null);
+
+  // Keep the browser's back button in step with the chat finder at /start
+  useEffect(() => {
+    const onPop = () => setView(window.location.pathname === '/start' ? 'questionnaire' : 'landing');
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
 
   const handleStartQuestionnaire = () => {
     // Always go to questionnaire first - signup happens later when they buy
+    window.history.pushState({}, '', '/start');
     setView('questionnaire');
   };
 
   const handleStartOver = () => {
     setEmailSuggestions(null);
+    if (window.location.pathname === '/start') window.history.pushState({}, '', '/');
     setView('landing');
   };
 
   // Landing Page View: search-first page; the chat finder is one click away
   if (view === 'landing') {
-    return <Landing api={landingApi} onOpenChat={handleStartQuestionnaire} />;
+    return <Site api={landingApi} onOpenChat={handleStartQuestionnaire} />;
   }
 
   if (view === 'questionnaire') {

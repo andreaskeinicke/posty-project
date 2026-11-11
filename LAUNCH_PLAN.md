@@ -1,7 +1,7 @@
 # Posty — Launch Plan (July 2026)
 
 **Mission:** "Get a Gmail, but in your own name. We set everything up for you."
-Live domain: **posty.club** (owned, Namecheap, expires 2026-11-28, DNS on Cloudflare).
+Live domain: **posty.club** (owned, Namecheap, renewed — expires 2027-11-28, DNS on Cloudflare).
 
 ## Where we are (verified 2026-07-24)
 
@@ -70,13 +70,9 @@ Hobby plan): Express serves the built frontend + API on one origin.
 - Post-payment registration not yet triggered automatically (Phase 2.1)
 - Emails console-only (Phase 2.2)
 - `namecheap` npm package is v0.0.1 — validate against sandbox before real orders
-- Dead frontend files: `AppRouter.js`, `ChatInterface.js`, `DomainResults.js`,
-  `QuestionnaireFlow.js`, `VerifyEmail.js`, `DomainVerificationStatus.js`
-  (unreferenced; delete in a cleanup pass)
 - `claudeService.js` (chat flow) still targets an ancient model — unused by the
   main flow; update or remove with the chat interface decision
-- Old strategy docs (`posty_recommendation_engine.md`, `posty_v06.html`,
-  root-level setup MDs) should move to `docs/archive/`
+- Old strategy docs moved to `docs/archive/` (2026-11-11); root-level setup MDs still to review
 
 ## Operating loops (once deployed)
 

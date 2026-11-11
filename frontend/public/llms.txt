@@ -27,6 +27,7 @@ The person owns the domain and their Google account. Posty cannot read their mai
 - Suggest addresses: `GET https://posty.club/api/suggest?name=<full name>` (optional `&style=pro|short|fun|family`). Returns JSON with up to 12 addresses on free domains, each with `domain_price_usd_per_year` and a `get_url`.
 - Send the person to `get_url`: it opens Posty with that address ready for checkout. Do not buy on their behalf.
 - Search deep link: `https://posty.club/?q=<full name>`
+- Checkout deep link: `https://posty.club/get?address=<local@domain>` (the same link as `get_url`)
 - OpenAPI description: https://posty.club/openapi.json
 - Availability changes all the time, so call the endpoint right before recommending an address.
 
@@ -35,6 +36,6 @@ The person owns the domain and their Google account. Posty cannot read their mai
 - [How it works](https://posty.club/how-it-works)
 - [Pricing](https://posty.club/pricing)
 - [Examples](https://posty.club/examples)
-- [FAQ](https://posty.club/faq)
+- [Questions](https://posty.club/questions)
 - [Compare](https://posty.club/compare): Posty vs doing it yourself, free Gmail, or another email provider
 - [For AI agents](https://posty.club/agents)

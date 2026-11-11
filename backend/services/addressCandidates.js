@@ -40,7 +40,7 @@ function candidates(input) {
   const add = (local, base, tlds, style, label) => out.push({ local, base, tlds, style, label });
 
   if (l) {
-    add(f, l, ['.me', '.com', '.dev'], 'pro', 'Your surname as the domain');
+    add(f, l, ['.com', '.me', '.dev'], 'pro', 'Your surname as the domain');
     add(f, f + l, ['.com', '.me', '.page'], 'pro', 'Your full name');
     add('hi', f + l, ['.me', '.com', '.xyz'], 'fun', 'Friendly hello');
     add(f[0] + l, f[0] + l, ['.com', '.me', '.dev'], 'pro', 'Classic professional');
@@ -78,9 +78,7 @@ function rank(list, availability, style) {
     if (style === 'all' && seen[c.local] > 2) continue; // keep prefixes varied
     picked.push({ ...c, avail });
   }
-  // Full rows of three on desktop: 3 or 6 when there are enough.
-  const n = picked.length > 3 ? Math.min(6, picked.length - (picked.length % 3)) : picked.length;
-  return picked.slice(0, n);
+  return picked;
 }
 
 function priceOf(domain, availability) {

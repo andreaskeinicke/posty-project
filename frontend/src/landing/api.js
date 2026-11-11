@@ -14,8 +14,10 @@ export const landingApi = {
     }));
     return out;
   },
-  async startCheckout({ domain, price }) {
-    const r = await axios.post('/api/checkout/create-session', { domainName: domain, domainPrice: price });
+  async startCheckout({ address, domain, price, plan, firstName, lastName, contactEmail, country }) {
+    const r = await axios.post('/api/checkout/create-session', {
+      domainName: domain, domainPrice: price, address, workspacePlan: plan, firstName, lastName, contactEmail, country
+    });
     if (!r.data || !r.data.url) throw new Error('No checkout URL');
     return { url: r.data.url };
   }

@@ -37,7 +37,7 @@ export function candidates(input) {
   const add = (local, base, tlds, style, label) => out.push({ local, base, tlds, style, label });
 
   if (l) {
-    add(f, l, ['.me', '.com', '.dev'], 'pro', 'Your surname as the domain');
+    add(f, l, ['.com', '.me', '.dev'], 'pro', 'Your surname as the domain');
     add(f, f + l, ['.com', '.me', '.page'], 'pro', 'Your full name');
     add('hi', f + l, ['.me', '.com', '.xyz'], 'fun', 'Friendly hello');
     add(f[0] + l, f[0] + l, ['.com', '.me', '.dev'], 'pro', 'Classic professional');
@@ -64,6 +64,7 @@ export function domainsFor(list) {
 }
 
 // availability: { [domain]: { available: bool, price?: number } }
+// Returns candidates that have at least one free ending, best first, with `avail` endings.
 export function rank(list, availability, style) {
   const seen = {};
   const picked = [];
@@ -75,9 +76,38 @@ export function rank(list, availability, style) {
     if (style === 'all' && seen[c.local] > 2) continue; // keep prefixes varied
     picked.push({ ...c, avail });
   }
-  // Full rows of three on desktop: 3 or 6 when there are enough.
-  const n = picked.length > 3 ? Math.min(6, picked.length - (picked.length % 3)) : picked.length;
-  return picked.slice(0, n);
+  return picked;
+}
+
+const TLD_NOTE = {
+  '.com': 'the ending everyone types without asking',
+  '.me': 'personal, and reads like a name tag',
+  '.dev': 'for people who build things',
+  '.co': 'short and businesslike',
+  '.xyz': 'cheap, cheerful and modern',
+  '.email': 'says exactly what it is',
+  '.club': 'friendly, for groups and hobbies',
+  '.family': 'one home for everyone',
+  '.page': 'clean, like a personal page',
+  '.io': 'popular with tech folks'
+};
+
+// One row per complete address, in ranked order: every free ending of the best
+// candidate first, then the next candidate, so each row is something you can buy.
+export function addressRows(ranked, availability) {
+  const rows = [];
+  const firstPass = ranked.map(c => [c, c.avail[0]]);
+  const rest = [];
+  ranked.forEach(c => c.avail.slice(1).forEach(t => rest.push([c, t])));
+  [...firstPass, ...rest].forEach(([c, t]) => {
+    const domain = c.base + t;
+    rows.push({
+      local: c.local, domain, address: c.local + '@' + domain, style: c.style,
+      note: c.label + ', ' + (TLD_NOTE[t] || 'a good ending') + '.',
+      price: priceOf(domain, availability)
+    });
+  });
+  return rows;
 }
 
 export function priceOf(domain, availability) {

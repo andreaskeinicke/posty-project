@@ -40,7 +40,7 @@ router.get('/', async (req, res) => {
           domain,
           style: c.label,
           domain_price_usd_per_year: priceOf(domain, availability),
-          get_url: `${SITE}/?q=${encodeURIComponent(name)}&pick=${encodeURIComponent(address)}`
+          get_url: `${SITE}/get?address=${encodeURIComponent(address)}`
         });
       });
     });

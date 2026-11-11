@@ -1,6 +1,9 @@
 const stripeService = require('../services/stripeService');
 const { supabaseAdmin } = require('../config/supabase');
 const caseLogService = require('../services/caseLogService');
+const { getFulfilment } = require('../fulfilment');
+const { contactFromStripe } = require('../fulfilment/contact');
+const { TIERS } = require('../fulfilment/config');
 
 /**
  * Create a Stripe checkout session
@@ -8,7 +11,7 @@ const caseLogService = require('../services/caseLogService');
  */
 exports.createCheckoutSession = async (req, res) => {
   try {
-    const { domainName, domainPrice, caseId } = req.body;
+    const { domainName, domainPrice, caseId, emailAddress, mailTier } = req.body;
     const userId = req.userId || null; // From optionalAuth middleware; null for guests
     const user = req.user || null;
 
@@ -36,6 +39,26 @@ exports.createCheckoutSession = async (req, res) => {
 
     console.log(`🛒 Creating checkout session for ${user?.email || 'guest'} - ${domainName}`);
 
+    // Automated setup (behind FULFILMENT_ENABLED): check the registry once more before we take
+    // money, and collect what the registrar needs to put the customer down as owner.
+    const fulfilment = getFulfilment();
+    let fulfilmentOpts = null;
+    if (fulfilment) {
+      const preflight = await registryPreflight(fulfilment, domainName);
+      if (preflight && !preflight.registrable) {
+        return res.status(409).json({
+          success: false,
+          error: 'domain_unavailable',
+          message: `${domainName} was just taken or cannot be registered online. Pick another and we will set it up.`
+        });
+      }
+      fulfilmentOpts = {
+        collectRegistrant: true,
+        mailTier: TIERS.includes(mailTier) ? mailTier : fulfilment.config.defaultTier,
+        emailAddress: typeof emailAddress === 'string' && emailAddress.endsWith(`@${domainName}`) ? emailAddress.slice(0, 254) : null
+      };
+    }
+
     // Create Stripe checkout session (guest: Stripe collects the email)
     const checkoutSession = await stripeService.createCheckoutSession({
       userId,
@@ -43,7 +66,8 @@ exports.createCheckoutSession = async (req, res) => {
       domainName,
       domainPrice: domainPrice || 0,
       sessionId,
-      caseId
+      caseId,
+      fulfilment: fulfilmentOpts
     });
 
     // Learning loop: record which suggestion went to checkout
@@ -164,6 +188,7 @@ exports.handleWebhook = async (req, res) => {
     switch (event.type) {
       case 'checkout.session.completed':
         await handleCheckoutSessionCompleted(event.data.object);
+        await startFulfilment(event);
         break;
 
       case 'customer.subscription.created':
@@ -422,3 +447,45 @@ async function handleInvoicePaymentFailed(invoice) {
     console.error('Error handling failed payment:', error);
   }
 }
+
+/**
+ * Live registry check right before checkout. Returns null when there is nothing live to ask
+ * (dry-run setups) or the check itself fails: a failing check must not block a sale, the
+ * workflow checks again before it registers anything.
+ */
+async function registryPreflight(fulfilment, domainName) {
+  try {
+    const providers = fulfilment.workflow.providersFor({ dry_run: false });
+    return await providers.registrar.check(String(domainName).toLowerCase().trim());
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
+ * Hand a paid checkout to the fulfilment workflow (FULFILMENT_ENABLED only).
+ * Creating the order is awaited, so Stripe retries the webhook if it fails; the work itself
+ * runs after we answer Stripe, and the runner picks it up again if the process dies.
+ */
+async function startFulfilment(event) {
+  const fulfilment = getFulfilment();
+  if (!fulfilment) return;
+  const session = event.data.object;
+  if (session.metadata?.domainPurchaseRequired !== 'true') return;
+  if (session.payment_status && session.payment_status !== 'paid') {
+    console.log(`⏸️  Checkout ${session.id} not paid yet (${session.payment_status}); fulfilment waits`);
+    return;
+  }
+  const { contact, missing } = contactFromStripe(session.customer_details);
+  const { order, created } = await fulfilment.workflow.createFromCheckout(session, {
+    livemode: event.livemode === true,
+    contact,
+    contactMissing: missing
+  });
+  console.log(`📦 Fulfilment order ${order.id} ${created ? 'created' : 'already exists'} for ${order.domain_name}${order.dry_run ? ' (dry run)' : ''}`);
+  setImmediate(() => {
+    fulfilment.workflow.advance(order.id).catch(err => console.error(`Fulfilment advance failed for ${order.id}: ${err.message}`));
+  });
+}
+
+exports._startFulfilment = startFulfilment;

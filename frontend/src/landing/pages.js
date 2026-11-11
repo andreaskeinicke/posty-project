@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { money, TLD_PRICE } from './names';
 import { useStore, clearRecent } from './store';
 import { ResultRow } from './Landing';
+import FAQ_DATA from './faq.json';
+import SupportChat from './SupportChat';
 import { Address, AGENT_PROMPT, Closing, CopyButton, HELLO, Icon, Link, PageHead, useMeta, POSTY_MONTHLY, WORKSPACE_FROM, SITE } from './ui';
 
 function AgentPanel() {
@@ -239,34 +241,8 @@ export function Examples() {
 
 /* ---------- Questions ---------- */
 
-export const FAQ = [
-  ['Your domain', 'globe', 'Ownership, renewals, endings', [
-    ['Do I really own the domain?', 'Yes. It is registered with you as the owner, and you can move it to another provider whenever you like. Posty manages it for you while you are a customer.'],
-    ['Why do you only show some endings?', 'We only show addresses whose domain is free to buy right now. Taken or premium-priced domains are left out.'],
-    ['Can I use a domain I already own?', 'Yes. Tell us the domain and we connect it instead of buying a new one.'],
-    ['Can I change my address later?', 'You can add more addresses on the same domain at any time, like hello@ or a nickname. A different domain is a new search and a new domain.'],
-    ['What if an address I saved is gone later?', 'Domains can be registered by anyone at any time, so a saved address may be taken later. Search the name again before you buy to see what is free right now.']
-  ]],
-  ['Your inbox', 'mail', 'Workspace, phone, old mail', [
-    ['Why Google Workspace and not free Gmail?', 'Gmail is ending free sending from your own address in January 2027. Workspace gives you a proper inbox on your own domain, with Gmail, Calendar and Drive, billed by Google.'],
-    ['Can I bring my old mail and contacts?', 'Yes. Google has a built-in import tool for mail and contacts from Gmail, Outlook, Hotmail and most other providers. We walk you through it after you move in.'],
-    ['How do I add it to my phone?', 'Open the Gmail app, add an account, choose Google and sign in with your new address. Takes a minute.'],
-    ['Can my family get addresses too?', 'Yes. Add people on the same domain. Each extra person is another Google Workspace seat, billed by Google.'],
-    ['What happens to my old address?', 'Nothing. It keeps working. Tell people your new address at your own pace.']
-  ]],
-  ['Safety & privacy', 'shield', 'Records, spam, your data', [
-    ['Is my mail safe? Who can read it?', 'Your inbox lives in your own Google account. Posty manages the domain\'s settings, not your mailbox, and cannot read your mail.'],
-    ['How do you stop people faking my address?', 'We publish SPF, DKIM and DMARC records for your domain, which tell other mail servers to reject mail that pretends to be you.'],
-    ['What do you store about me?', 'Your name, your email for receipts, the domain you bought and the setup status. Recent searches on this site stay in your browser only.']
-  ]],
-  ['Billing', 'card', 'Receipts, cancelling, changes', [
-    ['Why is Google Workspace billed separately?', 'Your mailbox is a Google account in your name, so Google bills you directly. That keeps the mailbox yours, whatever happens to Posty.'],
-    ['What if I cancel Posty?', 'The domain and the Workspace account stay yours. You can keep them running yourself, or move them anywhere.'],
-    ['Can I use free Gmail instead of Workspace?', 'We build on Google Workspace, because Gmail is ending its free way of sending from your own address in January 2027.'],
-    ['How much does it cost in total?', '$5 a month to Posty, Google Workspace from $7 a month paid to Google, and the domain at cost, about $12 a year for a .com. About $13 a month for most people.'],
-    ['Do you add VAT?', 'VAT is added at checkout where it applies, based on where you live.']
-  ]]
-];
+// Shared with the support agent (backend/support/knowledge.js reads the same file).
+export const FAQ = FAQ_DATA;
 
 const TOPICS = ['Cancel', 'Old mail', 'Workspace', 'Family', 'Change address'];
 
@@ -312,6 +288,7 @@ export function Questions() {
               </div>
             </div>
             <aside className="q-side">
+              <SupportChat />
               <div className="panel side-card stuck">
                 <span className="eyebrow mono">Still stuck?</span>
                 <h3>Write to us.</h3>

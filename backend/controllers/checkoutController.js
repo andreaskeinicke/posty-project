@@ -11,7 +11,19 @@ const { TIERS } = require('../fulfilment/config');
  */
 exports.createCheckoutSession = async (req, res) => {
   try {
-    const { domainName, domainPrice, caseId, emailAddress, mailTier } = req.body;
+    const { domainName, domainPrice, caseId, mailTier } = req.body;
+    // Optional details from the site's checkout page, kept as Stripe metadata for fulfilment.
+    const clip = (v, n) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
+    const contactEmail = clip(req.body.contactEmail, 254);
+    const details = {
+      emailAddress: clip(req.body.address, 254),
+      firstName: clip(req.body.firstName, 80),
+      lastName: clip(req.body.lastName, 80),
+      country: clip(req.body.country, 2).toUpperCase(),
+      workspacePlan: req.body.workspacePlan === 'standard' ? 'standard' : 'starter'
+    };
+    // The site sends `address`; older clients send `emailAddress`.
+    const emailAddress = details.emailAddress || req.body.emailAddress;
     const userId = req.userId || null; // From optionalAuth middleware; null for guests
     const user = req.user || null;
 
@@ -62,8 +74,9 @@ exports.createCheckoutSession = async (req, res) => {
     // Create Stripe checkout session (guest: Stripe collects the email)
     const checkoutSession = await stripeService.createCheckoutSession({
       userId,
-      userEmail: user?.email,
+      userEmail: user?.email || (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail) ? contactEmail : undefined),
       domainName,
+      details,
       domainPrice: domainPrice || 0,
       sessionId,
       caseId,

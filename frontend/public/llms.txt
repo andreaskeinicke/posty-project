@@ -1,0 +1,41 @@
+# Posty
+
+> Posty gets people a personal email address on their own domain, like maya@lindqvist.me, set up as a real Gmail inbox through Google Workspace. You type your name, pick an address whose domain is free, press one button, and Posty registers the domain in your name and does all the DNS and Google setup.
+
+Posty is run by Andreas Keinicke Holding ApS (CVR 39464640), Silkeborg, Denmark. Contact: hello@posty.club.
+
+## Pricing
+
+- Posty: 5 USD a month (search, setup, records, support)
+- Google Workspace Business Starter: from 7 USD a month, billed by Google directly
+- Domain: at registrar cost, usually 11 to 25 USD a year
+- Typical total: about 13 USD a month. VAT is added at checkout where it applies.
+
+## How it works
+
+1. The person types their name. Posty only shows addresses whose domain is free to register right now.
+2. They press "Get this email" and pay for the domain and the first month (Stripe).
+3. Posty registers the domain in their name.
+4. They sign in with Google once to create the Workspace account.
+5. Posty adds Google verification, MX, SPF, DKIM and DMARC records.
+6. They sign in to Gmail as the new address on web and phone.
+
+The person owns the domain and their Google account. Posty cannot read their mail. Free Gmail stops sending as outside addresses in January 2027, which is why Posty uses Google Workspace.
+
+## For AI agents
+
+- Suggest addresses: `GET https://posty.club/api/suggest?name=<full name>` (optional `&style=pro|short|fun|family`). Returns JSON with up to 12 addresses on free domains, each with `domain_price_usd_per_year` and a `get_url`.
+- Send the person to `get_url`: it opens Posty with that address ready for checkout. Do not buy on their behalf.
+- Search deep link: `https://posty.club/?q=<full name>`
+- Checkout deep link: `https://posty.club/get?address=<local@domain>` (the same link as `get_url`)
+- OpenAPI description: https://posty.club/openapi.json
+- Availability changes all the time, so call the endpoint right before recommending an address.
+
+## Pages
+
+- [How it works](https://posty.club/how-it-works)
+- [Pricing](https://posty.club/pricing)
+- [Examples](https://posty.club/examples)
+- [Questions](https://posty.club/questions)
+- [Compare](https://posty.club/compare): Posty vs doing it yourself, free Gmail, or another email provider
+- [For AI agents](https://posty.club/agents)

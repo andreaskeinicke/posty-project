@@ -1,0 +1,137 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Posty public API",
+    "version": "1.0.0",
+    "description": "Find personal email addresses on domains that are free to register. Send the person to get_url to check out; never purchase on their behalf.",
+    "contact": {
+      "email": "hello@posty.club",
+      "url": "https://posty.club/agents"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://posty.club"
+    }
+  ],
+  "paths": {
+    "/api/suggest": {
+      "get": {
+        "operationId": "suggestAddresses",
+        "summary": "Suggest available email addresses for a name",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "description": "The person's full name, for example Maya Lindqvist",
+            "schema": {
+              "type": "string",
+              "maxLength": 60
+            }
+          },
+          {
+            "name": "style",
+            "in": "query",
+            "required": false,
+            "description": "Limit to one style",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "pro",
+                "short",
+                "fun",
+                "family"
+              ],
+              "default": "all"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Addresses on domains that were free when checked, best first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Suggestions"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or unusable name"
+          },
+          "429": {
+            "description": "Too many requests"
+          },
+          "502": {
+            "description": "Domain checks failed; retry later"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Suggestions": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "checked_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "addresses": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "address": {
+                  "type": "string",
+                  "example": "maya@lindqvist.me"
+                },
+                "domain": {
+                  "type": "string"
+                },
+                "style": {
+                  "type": "string"
+                },
+                "domain_price_usd_per_year": {
+                  "type": "number"
+                },
+                "get_url": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "pricing": {
+            "type": "object",
+            "properties": {
+              "posty_usd_per_month": {
+                "type": "number"
+              },
+              "google_workspace_usd_per_month_from": {
+                "type": "number"
+              },
+              "domain": {
+                "type": "string"
+              }
+            }
+          },
+          "note": {
+            "type": "string"
+          },
+          "docs": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      }
+    }
+  }
+}

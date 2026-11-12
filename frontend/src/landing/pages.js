@@ -128,6 +128,42 @@ export function BehindTheButton() {
   );
 }
 
+const VS = [
+  ['Your own domain', true],
+  ['Gmail by Google Workspace', true],
+  ['Finds free addresses for your name', false],
+  ['Domain, mailbox and DNS in one place, not three dashboards', false],
+  ['Google domain verification done for you', false],
+  ['MX records pointed at Gmail', false],
+  ['SPF, DKIM and DMARC set, so your mail is not spam', false],
+  ['Every record checked from the outside before you start', false],
+  ['Renewal watched, so your address never lapses', false],
+  ['Someone to ask when it breaks', false]
+];
+
+function DoItYourself() {
+  return (
+    <section className="band v5-rule v5-diy">
+      <div className="wrap">
+        <h2>Why not do it yourself? <span className="dim">You can. Here is what Posty saves you.</span></h2>
+        <div className="v5-vs">
+          <div>
+            <h3>On your own</h3>
+            <p>Registrar, Google Workspace and DNS, set up by you.</p>
+            <ul>{VS.map(([t, ok]) => <li key={t} className={ok ? '' : 'no'}><Icon name={ok ? 'check' : 'x'} size={14} />{t}{!ok && <span className="sr"> (not included)</span>}</li>)}</ul>
+          </div>
+          <div>
+            <h3>With Posty</h3>
+            <p>One search, one button. We set it up and look after it.</p>
+            <ul>{VS.map(([t]) => <li key={t}><Icon name="check" size={14} />{t}</li>)}</ul>
+          </div>
+        </div>
+        <Link className="v5-more" to="#behind" onClick={e => { e.preventDefault(); const el = document.getElementById('behind'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }}>See every technical step <Icon name="arrow" size={14} /></Link>
+      </div>
+    </section>
+  );
+}
+
 /* ---------- Pricing ---------- */
 
 export function Pricing() {
@@ -154,6 +190,7 @@ export function Pricing() {
           </div>
         </div>
       </section>
+      <DoItYourself />
       <BehindTheButton />
       <Closing />
     </>

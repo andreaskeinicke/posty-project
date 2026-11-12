@@ -936,3 +936,8 @@ body:has(.pl){background:#FFFFFF;margin:0}
   .pl .mi-list .btn{margin-left:44px}
 }
 .pl .v5-sum .due b:first-child{font-size:15px;letter-spacing:0;font-family:var(--f-body)}
+.pl .v5-diy .v5-vs{margin-top:48px}
+.pl .v5-diy+.v5-behind{border-top:0;padding-top:0}
+.pl .v5-diy h2{max-width:none}
+.pl .v5-diy{padding-top:96px}
+.pl .v5-diy+.v5-behind{padding-top:96px}

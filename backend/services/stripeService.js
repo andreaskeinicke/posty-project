@@ -22,7 +22,7 @@ class StripeService {
    * @param {string} params.sessionId - Questionnaire session ID
    * @returns {Object} Checkout session with URL
    */
-  async createCheckoutSession({ userId, userEmail, domainName, domainPrice, sessionId, caseId, details = {} }) {
+  async createCheckoutSession({ userId, userEmail, domainName, domainPrice, sessionId, caseId, details = {}, fulfilment = null }) {
     if (!this.stripe) {
       throw new Error('Stripe is not configured. Please add your Stripe API keys to .env');
     }
@@ -86,8 +86,19 @@ class StripeService {
           firstName: details.firstName || '',
           lastName: details.lastName || '',
           country: details.country || '',
-          workspacePlan: details.workspacePlan || 'starter'
+          workspacePlan: details.workspacePlan || 'starter',
+          ...(fulfilment ? {
+            mailTier: fulfilment.mailTier,
+            ...(fulfilment.emailAddress ? { emailAddress: fulfilment.emailAddress } : {})
+          } : {})
         },
+
+        // Automated setup needs the registrant's name, address and phone so the customer is
+        // the owner on record. Only asked for when FULFILMENT_ENABLED is on.
+        ...(fulfilment?.collectRegistrant ? {
+          billing_address_collection: 'required',
+          phone_number_collection: { enabled: true }
+        } : {}),
 
         // Allow promotion codes
         allow_promotion_codes: true,

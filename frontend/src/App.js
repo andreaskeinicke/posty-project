@@ -5,6 +5,7 @@ import ChatFinder from './components/ChatFinder';
 import EmailResults from './components/EmailResults';
 import CheckoutSuccess from './components/CheckoutSuccess';
 import CheckoutCanceled from './components/CheckoutCanceled';
+import MovingIn from './components/MovingIn';
 import Site from './landing/Site';
 import { landingApi } from './landing/api';
 
@@ -20,6 +21,11 @@ function Root() {
   }
   if (path === '/checkout/canceled') {
     return <CheckoutCanceled />;
+  }
+  // Order status link from our emails: /order/<token>
+  const orderMatch = path.match(/^\/order\/([A-Za-z0-9_-]{16,})$/);
+  if (orderMatch) {
+    return <MovingIn token={orderMatch[1]} />;
   }
   return <App />;
 }

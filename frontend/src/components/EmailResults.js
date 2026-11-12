@@ -20,7 +20,8 @@ function EmailResults({ suggestions, onStartOver }) {
       const response = await axios.post('/api/checkout/create-session', {
         domainName: emailSuggestion.domain,
         domainPrice: emailSuggestion.price || 0,
-        caseId: suggestions.caseId || null
+        caseId: suggestions.caseId || null,
+        emailAddress: emailSuggestion.email
       }, {
         headers: session ? {
           'Authorization': `Bearer ${session.access_token}`

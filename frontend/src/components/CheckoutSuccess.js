@@ -1,9 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import MovingIn from './MovingIn';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
 function CheckoutSuccess() {
+  const sessionId = new URLSearchParams(window.location.search).get('session_id');
+  const [tracker, setTracker] = useState('checking'); // checking | on | off
+
+  // Automated setup: if the backend has fulfilment on, show the live "Moving in" tracker.
+  useEffect(() => {
+    if (!sessionId) { setTracker('off'); return; }
+    axios.get(`${API_BASE_URL}/api/fulfilment/orders/by-session/${encodeURIComponent(sessionId)}`, { validateStatus: () => true })
+      .then(r => setTracker(r.status === 200 || r.status === 202 ? 'on' : 'off'))
+      .catch(() => setTracker('off'));
+  }, [sessionId]);
+
+  if (tracker === 'on') return <MovingIn sessionId={sessionId} />;
+  if (tracker === 'checking') return null;
+  return <ManualCheckoutSuccess />;
+}
+
+// Concierge mode (fulfilment flag off): a person sets things up by hand.
+function ManualCheckoutSuccess() {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState(null);
   const [error, setError] = useState(null);

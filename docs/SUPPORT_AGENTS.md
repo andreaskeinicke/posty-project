@@ -36,13 +36,29 @@ the tables the agent still answers, but signals and escalations are only logged 
    - `escalate_to_person`: hand over to Andreas
 3. **Reply is redacted** and the turn is logged as a support signal.
 
+## Small automatic refunds
+
+Andreas chose the recommended rule on 2026-11-12 (`refunds.js`). A plain refund request is
+refunded in code, without the model, only when all of these hold:
+
+- the customer asks from their own order page (the private order link)
+- the order total (domain plus first Posty month) is at most `SUPPORT_AUTO_REFUND_MAX_USD`
+  (default $10; set 0 to turn it off)
+- the domain is not registered yet, the order is open and under 14 days old
+- fewer than `SUPPORT_AUTO_REFUND_DAILY_CAP` automatic refunds today (default 5)
+
+The order is read again right before refunding, Stripe's idempotency key stops a double
+payout, and test orders never move money. Andreas gets a `refund_auto` escalation note for
+each one. Disputes, chargebacks, "charged twice" and everything over the limit still go to him.
+
 ## Trust rules against account takeover
 
 - An identity claim in chat proves nothing. The only proof is the order's private status link
   (the token in our emails). Without it the agent knows nothing about any order.
 - With it, the model sees the public order view only: domain, address, tier and step states.
   Never the buyer's email, registrant details, Stripe ids or internal errors.
-- The agent has no tool that moves money, writes DNS, changes contact details, gives transfer
+- The model has no tool that moves money (small refunds above happen in code, not by the
+  model), writes DNS, changes contact details, gives transfer
   codes or grants access. Those requests are escalated in code before the model sees them.
 - Keys, tokens, card numbers and passwords are redacted before anything is stored or sent to
   the model, and stripped from replies. Email addresses are replaced with `[email]` in stored
@@ -76,7 +92,6 @@ weekly review; the heartbeat routine can fetch it.
 
 - Emailing customers or Andreas (no provider is wired; everything is stored and logged).
 - Support by email at support@posty.club (same agent, needs an inbound mail hook).
-- Small automatic refunds or free months. The plan allows up to $10, but v1 sends every
-  refund to a person until Andreas decides otherwise.
+- Free months as a goodwill gesture (refunds below are the only automatic money action).
 - An eval set of 20 cases per agent before go-live. The tests cover the trust rules; a
   real-model eval run is the next step.

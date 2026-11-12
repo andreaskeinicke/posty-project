@@ -7,6 +7,7 @@ const { publicView } = require('../fulfilment/view');
 const { diagnose, coachNextStep } = require('../support/diagnostics');
 const { weeklyReport, reportMarkdown } = require('../support/signals');
 const { stalledOrders } = require('../support/coach');
+const { AutoRefunder } = require('../support/refunds');
 
 /**
  * Support agent and setup coach.
@@ -44,13 +45,25 @@ function createRouter({ getS = getSupport, getF = getFulfilment, resolver } = {}
     return order ? { id: order.id, view: publicView(order) } : null;
   }
 
+  // Small automatic refunds (support/refunds.js). One per router so the daily cap holds.
+  let refunder = null;
+  function refunderFor(config) {
+    const f = getF();
+    if (!f || !config || !(config.autoRefundMaxUsd > 0)) return null;
+    if (!refunder) {
+      refunder = new AutoRefunder({ store: f.workflow.store, payments: f.workflow.payments || null,
+        maxUsd: config.autoRefundMaxUsd, dailyCap: config.autoRefundDailyCap });
+    }
+    return refunder;
+  }
+
   const chatLimiter = rateLimit({ windowMs: 10 * 60 * 1000, max: 30, standardHeaders: true, legacyHeaders: false });
   router.post('/chat', chatLimiter, h(async (req, res) => {
     const { messages, orderToken, context } = req.body || {};
     if (!Array.isArray(messages) || !messages.length) return res.status(400).json({ error: 'messages required' });
     if (messages.length > 40) return res.status(400).json({ error: 'conversation too long' });
     const order = await orderFor(orderToken);
-    const out = await req.support.agent.respond({ messages, order, source: order ? 'order_page' : 'site', page: context });
+    const out = await req.support.agent.respond({ messages, order, source: order ? 'order_page' : 'site', page: context, refunder: order ? refunderFor(req.support.config) : null });
     res.json(out);
   }));
 

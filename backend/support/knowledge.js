@@ -22,7 +22,7 @@ const SETUP_ARTICLES = [
   ['Account', 'I lost access or want to change who owns the domain.',
     'For your safety, changes to ownership, the contact email, transfer codes or account access are handled by a person, never in chat. We reply by email to the address on your order.'],
   ['Billing', 'I want a refund.',
-    'Refunds are handled by a person. Tell us what happened and we reply by email. Once a domain is registered it cannot be returned to the registry, but you keep it either way.']
+    'Small orders (up to $10) that we have not registered a domain for yet can be refunded right away: ask for a refund in the chat on your order page. Everything else is handled by a person, who replies by email. Once a domain is registered it cannot be returned to the registry, but you keep it either way.']
 ];
 
 /** Flat list of { group, q, a } used for search and for the agent's system prompt. */

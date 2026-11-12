@@ -9,6 +9,9 @@
  *   SUPPORT_ESCALATION_EMAIL     where escalations would be sent once an email provider is
  *                                wired (today they are logged and stored only)
  *   SUPPORT_MAX_TURNS            longest conversation the endpoint accepts (default 12)
+ *   SUPPORT_AUTO_REFUND_MAX_USD  refund on its own up to this order total, only before the
+ *                                domain is registered (default 10, Andreas 2026-11-12; 0 = off)
+ *   SUPPORT_AUTO_REFUND_DAILY_CAP  most automatic refunds per day (default 5)
  *
  * ANTHROPIC_API_KEY is shared with the finder. Without it the agent answers from the help
  * content with plain search, so the widget still works.
@@ -23,6 +26,9 @@ function loadSupportConfig(env = process.env) {
     escalationEmail: env.SUPPORT_ESCALATION_EMAIL || 'hello@posty.club',
     maxTurns: parseInt(env.SUPPORT_MAX_TURNS, 10) || 12,
     maxMessageChars: 1500,
+    autoRefundMaxUsd: env.SUPPORT_AUTO_REFUND_MAX_USD === undefined || env.SUPPORT_AUTO_REFUND_MAX_USD === ''
+      ? 10 : Math.max(0, parseFloat(env.SUPPORT_AUTO_REFUND_MAX_USD) || 0),
+    autoRefundDailyCap: parseInt(env.SUPPORT_AUTO_REFUND_DAILY_CAP, 10) || 5,
     hasApiKey: Boolean(env.ANTHROPIC_API_KEY)
   };
 }

@@ -17,6 +17,11 @@ const { triage, looksLikeInjection, redact, escalationReply } = require('./trust
 const { diagnose, coachNextStep } = require('./diagnostics');
 const { logSignal, topicOf } = require('./signals');
 const { escalate } = require('./escalations');
+const { autoRefundReply } = require('./refunds');
+
+// A plain "I want my money back" may be refunded automatically; disputes always go to a person.
+const PLAIN_REFUND = /\b(refund|money back|cancel (my )?(order|payment))/i;
+const DISPUTE = /chargeback|charge ?back|dispute|charged twice|double charg|overcharg|fraud|unauthori[sz]ed/i;
 
 const MAX_TOOL_ROUNDS = 3;
 
@@ -162,7 +167,7 @@ class SupportAgent {
    * @param {object} input { messages: [{role, content}], order: { id, view } | null, source }
    * @returns {Promise<{reply, escalated, category, sources, nextStep}>}
    */
-  async respond({ messages, order = null, source = 'chat', page = null }) {
+  async respond({ messages, order = null, source = 'chat', page = null, refunder = null }) {
     const where = pageContext(page) || (order ? { stage: 'order' } : null);
     const convo = sanitiseMessages(messages, this.config);
     const last = convo.length ? convo[convo.length - 1] : null;
@@ -175,6 +180,16 @@ class SupportAgent {
 
     // 1. Code-level escalation: no model call.
     const category = triage(question);
+    if (category === 'refund' && order && refunder && PLAIN_REFUND.test(question) && !DISPUTE.test(question)) {
+      const r = await refunder.tryRefund(order.id);
+      if (r.refunded) {
+        // Andreas still gets a note for every automatic refund.
+        const note = `Automatic refund $${r.amountUsd.toFixed(2)}${r.simulated ? ' (test order, no money moved)' : ''}: ${question}`;
+        await escalate(this.escalations, { category: 'refund_auto', orderId: order.id, summary: note, messages: convo }, this.log);
+        await logSignal(this.signals, { ...signalBase, kind: 'auto_refund', category: 'refund', escalated: false, resolvedByAgent: true, topic: 'billing' }, this.log);
+        return { reply: autoRefundReply(r.amountUsd), escalated: false, category: 'refund', refunded: true };
+      }
+    }
     if (category) {
       await escalate(this.escalations, { category, orderId: order?.id || null, summary: question, messages: convo }, this.log);
       await logSignal(this.signals, { ...signalBase, kind: 'escalation', category, escalated: true, resolvedByAgent: false, topic: topicFor(category, question) }, this.log);

@@ -955,3 +955,7 @@ body:has(.pl){background:#FFFFFF;margin:0}
 .closing-line h2 .om-line{display:block}
 .results-panel .rows{transition:opacity .2s}
 .results-panel.is-refreshing .rows{opacity:.55}
+/* Ask Posty placements (hidden unless SUPPORT_AGENT_ENABLED) */
+.pl .pad-x{padding:0 20px 16px}
+.pl .wl-help{max-width:640px;margin:32px auto 0}
+.pl .v5-sum .sc-line,.pl .v5-qside .sc-line{margin-top:12px}

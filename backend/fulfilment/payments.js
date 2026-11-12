@@ -9,13 +9,13 @@
 class StripePayments {
   constructor(stripe) { this.stripe = stripe; }
 
-  async refundAndCancel(order) {
+  async refundAndCancel(order, { cause = 'domain_unavailable' } = {}) {
     const result = { refunded: false, cancelled: false };
     const pi = order.stripe_payment_intent_id || await this._paymentIntentForInvoice(order.stripe_invoice_id);
     if (pi) {
       // Idempotency key: a retried compensation never refunds twice.
       await this.stripe.refunds.create({ payment_intent: pi, reason: 'requested_by_customer',
-        metadata: { posty_order: order.id, cause: 'domain_unavailable' } },
+        metadata: { posty_order: order.id, cause } },
       { idempotencyKey: `posty-refund-${order.id}` });
       result.refunded = true;
     }

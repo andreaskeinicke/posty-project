@@ -639,3 +639,4 @@ body:has(.pl){background:#FFFFFF;margin:0}
 .pl .history-panel li a{color:var(--ink);font-weight:500;white-space:nowrap}
 @media (max-width:900px){.pl .saved-grid{grid-template-columns:1fr}}
 .pl .panel.receipt{background:#F7F7F7;border:0;padding:40px}
+.pl .history-panel .hp-head h2{font-size:20px;letter-spacing:-.02em;font-weight:500;max-width:none}

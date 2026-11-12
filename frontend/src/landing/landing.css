@@ -941,3 +941,15 @@ body:has(.pl){background:#FFFFFF;margin:0}
 .pl .v5-diy h2{max-width:none}
 .pl .v5-diy{padding-top:96px}
 .pl .v5-diy+.v5-behind{padding-top:96px}
+
+/* closing headline: rotating old-school provider */
+.oldmail{display:inline-flex;align-items:baseline;white-space:nowrap}
+.om-word{display:inline-block;animation:om-in .38s cubic-bezier(.2,.7,.2,1)}
+.om-boomer{display:inline-block;transform-origin:50% 90%}
+.is-boomer .om-boomer{animation:om-tilt .7s .35s ease-in-out both}
+.om-wink{display:inline-block;margin-left:.12em;color:#E0A100;align-self:center;animation:om-pop .45s .55s cubic-bezier(.3,1.6,.5,1) both}
+@keyframes om-in{from{opacity:0;transform:translateY(.35em)}to{opacity:1;transform:none}}
+@keyframes om-tilt{0%,100%{transform:none}30%{transform:rotate(-6deg)}60%{transform:rotate(4deg)}}
+@keyframes om-pop{from{opacity:0;transform:scale(.4) rotate(-20deg)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.om-word,.is-boomer .om-boomer,.om-wink{animation:none}}
+.closing-line h2 .om-line{display:block}

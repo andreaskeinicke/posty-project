@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from './store';
 import { X } from '@phosphor-icons/react/dist/csr/X';
+import { SmileyWink } from '@phosphor-icons/react/dist/csr/SmileyWink';
 import { ArrowRight } from '@phosphor-icons/react/dist/csr/ArrowRight';
 import { At } from '@phosphor-icons/react/dist/csr/At';
 import { BookmarkSimple } from '@phosphor-icons/react/dist/csr/BookmarkSimple';
@@ -189,13 +190,36 @@ export function Nav({ path }) {
   );
 }
 
+// Closing headline joke (Andreas, Nov 12): the provider cycles through old-school
+// addresses and lands on "boomermail.com" with a small wink. Static for reduced motion.
+const OLD_MAIL = ['hotmail.com', 'yahoo.com', 'msn.com', 'live.com', 'boomermail.com'];
+function OldMail() {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
+    const last = i === OLD_MAIL.length - 1;
+    const t = setTimeout(() => setI((i + 1) % OLD_MAIL.length), last ? 4200 : i === 0 ? 2600 : 1500);
+    return () => clearTimeout(t);
+  }, [i]);
+  const word = OLD_MAIL[i];
+  const boomer = word === 'boomermail.com';
+  return (
+    <span className={'oldmail' + (boomer ? ' is-boomer' : '')}>
+      <span key={word} className="om-word">
+        {boomer ? <><span className="om-boomer">boomer</span>mail.com</> : word}?
+      </span>
+      {boomer && <SmileyWink className="om-wink" size="0.8em" weight="duotone" aria-hidden="true" />}
+    </span>
+  );
+}
+
 export function Closing() {
   const [name, setName] = useState('');
   return (
     <section className="band">
       <div className="wrap">
         <div className="closing-line">
-          <h2>Still on @hotmail.com? <span className="dim">Get an address that is actually yours.</span></h2>
+          <h2 aria-label="Still on @hotmail.com? Get an address that is actually yours."><span className="om-line" aria-hidden="true">Still on @<OldMail /></span> <span className="dim" aria-hidden="true">Get an address that is actually yours.</span></h2>
           <SearchBox id="pl-q2" value={name} onChange={setName} onSubmit={v => navigate(v.trim() ? '/?q=' + encodeURIComponent(v.trim()) : '/#search')} />
         </div>
       </div>

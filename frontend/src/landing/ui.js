@@ -74,17 +74,21 @@ export function useMeta(title, description, path, noindex = false) {
 
 /* ---------- brand bits ---------- */
 
+// Posty mark (Andreas's pick, Nov 12): blue speech-bubble P on a soft tile, no dot.
+const BUBBLE_P = 'M2.5 6.6A3.6 3.6 0 0 1 6.1 3h8.9a6.9 6.9 0 0 1 0 13.8H8.6l-4.9 4.1a.7.7 0 0 1-1.2-.5z';
 export function Logo({ size = 28 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" className="logo-mark">
       <defs>
-        <linearGradient id="plg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#7FB0F7" /><stop offset="1" stopColor="#3F7FE6" />
+        <linearGradient id="pl-tile" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#F7FAFF" /><stop offset="1" stopColor="#E4EDFB" />
+        </linearGradient>
+        <linearGradient id="pl-bub" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#6FA6F6" /><stop offset="1" stopColor="#3A78E4" />
         </linearGradient>
       </defs>
-      <path d="M16 3c7.7 0 13 5 13 11.6S23.7 26 16 26c-1.6 0-3.1-.2-4.5-.6L5 29l1.6-6C4.3 20.9 3 18 3 14.6 3 8 8.3 3 16 3z" fill="url(#plg)" />
-      <path d="M10 11.5l6 4.5 6-4.5" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="25.5" cy="6.5" r="3.6" fill="#D4553A" stroke="#fff" strokeWidth="1.6" />
+      <rect x="0.75" y="0.75" width="30.5" height="30.5" rx="8" fill="url(#pl-tile)" stroke="#D9E5F7" strokeWidth="1" />
+      <path d={BUBBLE_P} transform="translate(5.2 5.6) scale(0.9)" fill="url(#pl-bub)" />
     </svg>
   );
 }

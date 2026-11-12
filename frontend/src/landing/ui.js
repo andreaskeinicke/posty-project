@@ -74,21 +74,22 @@ export function useMeta(title, description, path, noindex = false) {
 
 /* ---------- brand bits ---------- */
 
-// Posty mark (Andreas's pick, Nov 12): blue speech-bubble P on a soft tile, no dot.
-const BUBBLE_P = 'M2.5 6.6A3.6 3.6 0 0 1 6.1 3h8.9a6.9 6.9 0 0 1 0 13.8H8.6l-4.9 4.1a.7.7 0 0 1-1.2-.5z';
-export function Logo({ size = 28 }) {
+// Posty mark (final, Nov 12): blue speech-bubble P on a light tile, no dot.
+// Source: project brand/final/posty-mark.svg (100x100).
+const BUBBLE_P = 'M18.5 25A8.5 8.5 0 0 1 27 16.5H61.5A24 23.6 0 0 1 61.5 63.7H41.6Q39.6 63.7 38.1 65.1L23.4 79.6Q21.3 81.6 19.8 80.5Q18.5 79.6 18.5 77.6Z';
+export function Logo({ size = 26 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" className="logo-mark">
+    <svg width={size} height={size} viewBox="0 0 100 100" aria-hidden="true" className="logo-mark">
       <defs>
-        <linearGradient id="pl-tile" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#F7FAFF" /><stop offset="1" stopColor="#E4EDFB" />
-        </linearGradient>
-        <linearGradient id="pl-bub" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#6FA6F6" /><stop offset="1" stopColor="#3A78E4" />
-        </linearGradient>
+        <linearGradient id="pm-tile" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#F7FAFF" /><stop offset="1" stopColor="#E4EEFD" /></linearGradient>
+        <linearGradient id="pm-rim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FFFFFF" /><stop offset="1" stopColor="#C9DCF8" /></linearGradient>
+        <linearGradient id="pm-p" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#4C9DFB" /><stop offset="1" stopColor="#3383F0" /></linearGradient>
+        <linearGradient id="pm-hi" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FFFFFF" stopOpacity=".45" /><stop offset=".18" stopColor="#FFFFFF" stopOpacity="0" /></linearGradient>
+        <filter id="pm-sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.6" stdDeviation="1.6" floodColor="#1F5FC4" floodOpacity=".28" /></filter>
       </defs>
-      <rect x="0.75" y="0.75" width="30.5" height="30.5" rx="8" fill="url(#pl-tile)" stroke="#D9E5F7" strokeWidth="1" />
-      <path d={BUBBLE_P} transform="translate(5.2 5.6) scale(0.9)" fill="url(#pl-bub)" />
+      <rect x="1" y="1" width="98" height="98" rx="22" fill="url(#pm-tile)" stroke="url(#pm-rim)" strokeWidth="1.5" />
+      <path d={BUBBLE_P} fill="url(#pm-p)" filter="url(#pm-sh)" />
+      <path d={BUBBLE_P} fill="url(#pm-hi)" stroke="#2A74DF" strokeOpacity=".55" strokeWidth=".9" />
     </svg>
   );
 }
@@ -206,7 +207,7 @@ export function Footer() {
   return (
     <footer>
       <div className="wrap foot-row">
-        <Link className="logo" to="/" aria-label="Posty home"><Logo size={24} />Posty</Link>
+        <Link className="logo" to="/" aria-label="Posty home"><Logo />Posty</Link>
         <nav aria-label="Footer">
           <Link to="/how-it-works">How it works</Link>
           <Link to="/pricing">Pricing</Link>

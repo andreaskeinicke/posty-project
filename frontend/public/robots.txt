@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /checkout/
+Disallow: /verify-email
+Disallow: /get
+Disallow: /moving-in
+Disallow: /welcome
+Disallow: /saved
+
+Sitemap: https://posty.club/sitemap.xml

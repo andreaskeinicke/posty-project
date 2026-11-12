@@ -22,7 +22,7 @@ class StripeService {
    * @param {string} params.sessionId - Questionnaire session ID
    * @returns {Object} Checkout session with URL
    */
-  async createCheckoutSession({ userId, userEmail, domainName, domainPrice, sessionId, caseId, fulfilment = null }) {
+  async createCheckoutSession({ userId, userEmail, domainName, domainPrice, sessionId, caseId, details = {}, fulfilment = null }) {
     if (!this.stripe) {
       throw new Error('Stripe is not configured. Please add your Stripe API keys to .env');
     }
@@ -82,6 +82,11 @@ class StripeService {
           questionnaireSessionId: sessionId || '',
           caseId: caseId || '',
           domainPurchaseRequired: domainPrice > 0 ? 'true' : 'false',
+          emailAddress: details.emailAddress || '',
+          firstName: details.firstName || '',
+          lastName: details.lastName || '',
+          country: details.country || '',
+          workspacePlan: details.workspacePlan || 'starter',
           ...(fulfilment ? {
             mailTier: fulfilment.mailTier,
             ...(fulfilment.emailAddress ? { emailAddress: fulfilment.emailAddress } : {})

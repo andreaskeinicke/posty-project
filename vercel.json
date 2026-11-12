@@ -1,7 +1,7 @@
 {
-  "installCommand": "cd frontend && npm install",
-  "buildCommand": "cd frontend && npm run build",
-  "outputDirectory": "frontend/build",
+  "installCommand": "if [ -d frontend ]; then cd frontend; fi; npm install",
+  "buildCommand": "if [ -d frontend ]; then (cd frontend && npm run build) && rm -rf build && cp -r frontend/build build; else npm run build; fi",
+  "outputDirectory": "build",
   "rewrites": [
     {
       "source": "/(.*)",

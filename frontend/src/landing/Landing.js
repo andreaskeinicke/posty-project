@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import SupportChat from './SupportChat';
-import { candidates, domainsFor, rank, addressRows, money } from './names';
+import { candidates, domainsFor, rank, addressRows, money, nameProblem } from './names';
 import { addRecent, clearRecent, isSaved, toggleSaved, useStore } from './store';
+import { headline, track } from './experiment';
 import HeroVisual, { useTypedPlaceholder } from './HeroVisual';
 import { Closing, Heart, Icon, Link, Logo, SearchBox, getUrl, navigate, useMeta, POSTY_MONTHLY, WORKSPACE_FROM } from './ui';
 
@@ -14,9 +15,9 @@ const FILTERS = [
 const FIRST = 4;
 const MAX = 12;
 
-// Hero copy (Paper "Site v5 · refined"). The headline test swaps HERO.h1 per variant.
+// Hero copy (Paper "Site v5 · refined"). The h1 comes from the headline test
+// (headlines.json, control "Email with your name on it."); see docs/HEADLINE_TESTS.md.
 const HERO = {
-  h1: 'Email with your name on it.',
   sub: 'Pick an address on your own domain. We register it, set up Gmail by Google Workspace and look after it from there.'
 };
 
@@ -43,7 +44,7 @@ export function ResultRow({ r, index, saved, endings, onEnding }) {
       <div className="row-price"><b>{money(r.price)} / year</b><span>domain, at cost</span></div>
       <div className="row-acts">
         <button type="button" className="icon-btn" aria-pressed={on} aria-label={on ? `Remove ${r.address} from saved` : `Save ${r.address}`} onClick={() => toggleSaved(r)}><Heart on={on} /></button>
-        <Link className={'btn ' + (top ? 'btn-blue' : 'btn-soft')} to={getUrl(r.address)}>Get this email</Link>
+        <Link className={'btn ' + (top ? 'btn-blue' : 'btn-soft')} to={getUrl(r.address)} onClick={() => track('get')}>Get this email</Link>
       </div>
     </li>
   );
@@ -80,6 +81,7 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
   const { recent, saved } = useStore();
   const inputRef = useRef(null);
   const reqId = useRef(0);
+  const h1 = headline().variant.headline;
   const typed = useTypedPlaceholder(!name, 'Type your name');
 
   const search = async value => {
@@ -87,6 +89,7 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
     setQuery(q); setName(q); setShowAll(false);
     if (!q) { setStatus('idle'); setList([]); return; }
     if (!api.demo || value !== initialName) {
+      if (!api.demo) track('search');
       addRecent(q);
       const url = new URL(window.location.href);
       url.searchParams.set('q', q); url.searchParams.delete('pick'); url.hash = '';
@@ -105,6 +108,7 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
   };
 
   useEffect(() => {
+    if (!api.demo) track('view');
     if (start.pick && start.pick.includes('@')) { navigate(getUrl(start.pick)); return; }
     if (first) search(first);
     if (window.location.hash === '#search' && inputRef.current) inputRef.current.focus();
@@ -130,7 +134,7 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
         <div className="glow" aria-hidden="true" />
         <div className="wrap hero-in">
           <span className="badge-soft"><Logo size={18} />Your own domain, with Gmail by Google Workspace</span>
-          <h1>{HERO.h1}</h1>
+          <h1>{h1}</h1>
           <p className="lede">{HERO.sub}</p>
 
           <SearchBox big value={name} onChange={setName} onSubmit={search} inputRef={inputRef} placeholder={typed} />
@@ -168,7 +172,7 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
               {status === 'ready' && rows.length > 0 && (
                 <ul className="rows">{shown.map((g, i) => <ResultRow key={g.key + style} r={g.r} index={i} saved={saved} endings={g.endings} onEnding={t => setEnding(e => ({ ...e, [g.key]: t }))} />)}</ul>
               )}
-              {status === 'ready' && !rows.length && <p className="note pad">Nothing free in this style. Try another style, or add a middle name.</p>}
+              {status === 'ready' && !rows.length && <p className="note pad">{nameProblem(query) || 'Nothing free in this style. Try another style, or add a middle name.'}</p>}
               {status === 'error' && <p className="note pad">Try again in a moment.</p>}
               {status === 'ready' && rows.length > 0 && (
                 <div className="panel-foot">

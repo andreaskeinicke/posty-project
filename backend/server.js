@@ -43,6 +43,7 @@ app.use('/api/checkout', require('./routes/checkout'));
 app.use('/api/verification', require('./routes/verification'));
 app.use('/api/suggest', require('./routes/suggest'));
 app.use('/api/fulfilment', require('./routes/fulfilment'));
+app.use('/api/experiments', require('./routes/experiments'));
 
 // Health check
 app.get('/health', (req, res) => {

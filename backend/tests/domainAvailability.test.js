@@ -38,3 +38,18 @@ test('WHOIS is used when RDAP has no answer, and verified results are cached', a
   assert.strictEqual(result.method, 'whois');
   assert.strictEqual(service.cache.keys().length, 1);
 });
+
+test('TLDs missing from the IANA bootstrap use the override RDAP server', async () => {
+  service._bootstrap = new Map();
+  service._bootstrapExpires = Date.now() + 60000;
+  const realFetch = global.fetch;
+  let requested;
+  global.fetch = async url => { requested = url; return { status: 404, ok: false }; };
+  try {
+    const verdict = await Object.getPrototypeOf(service)._checkRDAP.call(service, 'free-example.io');
+    assert.strictEqual(verdict, 'available');
+    assert.strictEqual(requested, 'https://rdap.identitydigital.services/rdap/domain/free-example.io');
+  } finally {
+    global.fetch = realFetch;
+  }
+});

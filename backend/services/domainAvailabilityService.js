@@ -1,5 +1,13 @@
 const dns = require('dns').promises;
 const net = require('net');
+
+// Registries that run RDAP but are missing from the IANA bootstrap file.
+// .io and .me are operated by Identity Digital (their WHOIS hosts are aliases
+// of whois.identitydigital.services).
+const RDAP_OVERRIDES = {
+  io: 'https://rdap.identitydigital.services/rdap/',
+  me: 'https://rdap.identitydigital.services/rdap/'
+};
 const whois = require('whois-json');
 const NodeCache = require('node-cache');
 const cloudflareService = require('./cloudflareService');
@@ -167,7 +175,7 @@ class DomainAvailabilityService {
   async _checkRDAP(domain) {
     try {
       const tld = domain.slice(domain.lastIndexOf('.') + 1);
-      const base = (await this._rdapBootstrap()).get(tld);
+      const base = (await this._rdapBootstrap()).get(tld) || RDAP_OVERRIDES[tld];
       if (!base) return 'unknown'; // TLD has no RDAP service
       const response = await fetch(`${base}domain/${encodeURIComponent(domain)}`, {
         redirect: 'follow',
@@ -243,7 +251,13 @@ class DomainAvailabilityService {
       if (!server) return 'unknown';
       // DENIC needs its own query syntax to return status lines
       const query = tld === 'de' ? `-T dn ${domain}` : domain;
-      return this._parseWhois(await this._whoisQuery(server, query));
+      const answer = await this._whoisQuery(server, query);
+      const verdict = this._parseWhois(answer);
+      if (verdict === 'unknown') {
+        // Log the start of answers we cannot classify, so new formats can be added
+        console.warn(`WHOIS unclassified for ${domain} via ${server}: ${answer.slice(0, 300).replace(/\s+/g, ' ')}`);
+      }
+      return verdict;
     } catch (error) {
       console.warn(`WHOIS check failed for ${domain}: ${error.message}`);
       return 'unknown';

@@ -97,7 +97,7 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
         <div className="glow" aria-hidden="true" />
         <div className="wrap hero-in">
           <span className="eyebrow pill"><i />Your own domain · Gmail by Google Workspace</span>
-          <h1>Get your dream email <em className="s">today.</em></h1>
+          <h1>Get your dream email <span className="dim">today.</span></h1>
           <p className="lede">Search a name, pick an address, press one button. Domain, inbox and setup: <b>we handle the rest.</b></p>
 
           <SearchBox big value={name} onChange={setName} onSubmit={search} inputRef={inputRef} placeholder="Type your name, e.g. Anna Keinicke" />
@@ -151,7 +151,7 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
         <div className="wrap split2 center">
           <div className="head">
             <span className="eyebrow">After you press the button</span>
-            <h2>From search to sent, <em className="s">the same day.</em></h2>
+            <h2>From search to sent, <span className="dim">the same day.</span></h2>
             <ol className="tiles">
               <li className="t-sky"><span className="n">01</span><div><h3>We register your domain</h3><p>It's bought at cost and registered in your name. You own it, not us.</p></div></li>
               <li className="t-peach"><span className="n">02</span><div><h3>We set up your inbox</h3><p>Your Google Workspace account, DNS records and security settings, all done for you. Nothing to configure.</p></div></li>
@@ -176,7 +176,7 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
         <div className="wrap split2 center">
           <div className="head">
             <span className="eyebrow">Pricing</span>
-            <h2>One honest price. <em className="s">No surprises.</em></h2>
+            <h2>One honest price. <span className="dim">No surprises.</span></h2>
             <p className="sub">You see every line before you pay. Cancel any time, and the domain and mailbox stay yours.</p>
           </div>
           <div className="panel receipt">

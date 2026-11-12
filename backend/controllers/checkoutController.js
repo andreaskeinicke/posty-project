@@ -15,8 +15,10 @@ exports.createCheckoutSession = async (req, res) => {
     // Optional details from the site's checkout page, kept as Stripe metadata for fulfilment.
     const clip = (v, n) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
     const contactEmail = clip(req.body.contactEmail, 254);
+    // The site sends the chosen address as `address`; older clients send `emailAddress`.
+    const emailAddress = clip(req.body.emailAddress || req.body.address, 254);
     const details = {
-      emailAddress: clip(req.body.address, 254),
+      emailAddress,
       firstName: clip(req.body.firstName, 80),
       lastName: clip(req.body.lastName, 80),
       country: clip(req.body.country, 2).toUpperCase(),

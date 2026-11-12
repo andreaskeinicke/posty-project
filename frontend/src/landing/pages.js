@@ -13,7 +13,7 @@ function AgentPanel() {
         <div className="dark-panel">
           <div>
             <span className="eyebrow">For AI assistants</span>
-            <h2>Ask your assistant to find you <em className="s">an address.</em></h2>
+            <h2>Ask your assistant to find you <span className="dim">an address.</span></h2>
             <p>Posty publishes a plain description of what it does and how to search, so assistants can look up addresses for you and hand you a link to finish. <Link to="/agents">How it works for assistants →</Link></p>
           </div>
           <div className="prompt">
@@ -44,7 +44,7 @@ export function HowItWorks() {
         <div className="wrap hiw-hero">
           <div className="hero-in">
             <span className="eyebrow">How it works</span>
-            <h1>Three steps. <em className="s">We take the hard one.</em></h1>
+            <h1>Three steps. <span className="dim">We take the hard one.</span></h1>
             <p className="lede">Most email providers hand you a list of DNS records and wish you luck. Posty finds the address, buys the domain in your name, and connects everything. You choose, and approve once with Google.</p>
             <div className="cta-row left">
               <Link className="btn btn-ink" to="/#search">Find your email</Link>
@@ -97,7 +97,7 @@ export function HowItWorks() {
         <div className="wrap split2">
           <div className="head">
             <span className="eyebrow">The usual way vs Posty</span>
-            <h2>No DNS <em className="s">homework.</em></h2>
+            <h2>No DNS <span className="dim">homework.</span></h2>
             <p className="sub">Setting up email on your own domain normally means buying a domain in one place, mail in another, then copying records between them. Small mistakes there are why mail goes missing.</p>
           </div>
           <div className="panel vs">
@@ -131,7 +131,7 @@ export function Pricing() {
   ];
   return (
     <>
-      <PageHead kicker="Pricing" title={<>One price for Posty. <em className="s">Every other line, at cost.</em></>} sub="You see the whole receipt before you pay. No bundles, no first-year tricks, and the domain is registered in your name from day one." />
+      <PageHead kicker="Pricing" title={<>One price for Posty. <span className="dim">Every other line, at cost.</span></>} sub="You see the whole receipt before you pay. No bundles, no first-year tricks, and the domain is registered in your name from day one." />
       <section className="band tight">
         <div className="wrap price-grid">
           <div className="panel plan">
@@ -162,7 +162,7 @@ export function Pricing() {
       </section>
       <section className="band">
         <div className="wrap">
-          <h2>Same price, <em className="s">whoever you are.</em></h2>
+          <h2>Same price, <span className="dim">whoever you are.</span></h2>
           <div className="three" style={{ marginTop: 28 }}>
             {who.map(([t, k, a, d]) => (
               <article key={k} className="panel who-card">
@@ -177,7 +177,7 @@ export function Pricing() {
         <div className="wrap split2">
           <div className="head">
             <span className="eyebrow">Pricing questions</span>
-            <h2>Fair <em className="s">questions.</em></h2>
+            <h2>Fair <span className="dim">questions.</span></h2>
             <Link className="more" to="/questions">All questions →</Link>
           </div>
           <div className="faq">
@@ -215,7 +215,7 @@ export function Examples() {
   useMeta('Email address ideas · Posty examples', 'Ideas for a personal email address on your own domain: personal brand, professional, short, family, playful and interest-based styles. Tap one to search with your own name.', '/examples');
   return (
     <>
-      <PageHead kicker="Examples" title={<>Ways to be <em className="s">@you.</em></>} sub="A few styles people pick. Tap any example to search the same style with that name, then try your own." />
+      <PageHead kicker="Examples" title={<>Ways to be <span className="dim">@you.</span></>} sub="A few styles people pick. Tap any example to search the same style with that name, then try your own." />
       <section className="band tight">
         <div className="wrap">
           {EXAMPLES.map(([cat, line, items]) => (
@@ -259,7 +259,7 @@ export function Questions() {
   const filtered = q || group;
   return (
     <>
-      <PageHead kicker="Questions & help" title={<>Ask us <em className="s">anything.</em></>}>
+      <PageHead kicker="Questions & help" title={<>Ask us <span className="dim">anything.</span></>}>
         <form className="finder" role="search" onSubmit={e => e.preventDefault()}>
           <label className="sr" htmlFor="pl-faq">Search questions</label>
           <Icon name="search" size={20} className="finder-ic" />
@@ -324,7 +324,7 @@ export function Compare() {
   const mark = v => v === 'yes' ? <span className="yes">Yes</span> : v === 'no' ? <span className="no">No</span> : v === 'some' ? <span className="some">Sometimes</span> : v;
   return (
     <>
-      <PageHead kicker="Compare" title={<>The easy way to <em className="s">your own address.</em></>} sub="There are four ways to get a nicer email address. Here is how they stack up for someone who just wants it to work." />
+      <PageHead kicker="Compare" title={<>The easy way to <span className="dim">your own address.</span></>} sub="There are four ways to get a nicer email address. Here is how they stack up for someone who just wants it to work." />
       <section className="band tight">
         <div className="wrap">
           <div className="table-scroll panel">
@@ -366,7 +366,7 @@ export function Agents() {
 }`;
   return (
     <>
-      <PageHead kicker="For AI assistants" title={<>Ask your AI for <em className="s">a better address.</em></>} sub="People increasingly ask an assistant instead of a search engine. Posty answers them directly: one public endpoint, a plain-text guide and links that open checkout for the exact address.">
+      <PageHead kicker="For AI assistants" title={<>Ask your AI for <span className="dim">a better address.</span></>} sub="People increasingly ask an assistant instead of a search engine. Posty answers them directly: one public endpoint, a plain-text guide and links that open checkout for the exact address.">
         <div className="cta-row">
           <CopyButton className="btn btn-ink" text={AGENT_PROMPT} label="Copy a prompt for your AI" />
           <a className="btn btn-line" href="/llms.txt">Read llms.txt</a>
@@ -376,7 +376,7 @@ export function Agents() {
         <div className="wrap split2">
           <div className="head">
             <span className="eyebrow">The endpoint</span>
-            <h2>One call, <em className="s">real answers.</em></h2>
+            <h2>One call, <span className="dim">real answers.</span></h2>
             <p className="sub">Every address in the response is on a domain that was free when we checked. Send the person to <span className="mono">get_url</span> and they land on checkout for that exact address.</p>
             <ul className="checks">
               <li>No key needed</li>
@@ -390,7 +390,7 @@ export function Agents() {
       <section className="band">
         <div className="wrap">
           <span className="eyebrow">Deep links</span>
-          <h2>Links that <em className="s">do the work.</em></h2>
+          <h2>Links that <span className="dim">do the work.</span></h2>
           <div className="three" style={{ marginTop: 28 }}>
             <div className="panel ex"><span className="eyebrow">Search</span><p className="mono small">posty.club/?q=Maya+Lindqvist</p><p>Opens Posty with the search already run.</p></div>
             <div className="panel ex"><span className="eyebrow">Checkout</span><p className="mono small">posty.club/get?address=maya@lindqvist.me</p><p>Opens checkout for that address, after checking it is still free.</p></div>
@@ -410,29 +410,33 @@ export function Saved() {
   const { saved, recent } = useStore();
   return (
     <>
-      <PageHead kicker="My searches" title={<>Your short <em className="s">list.</em></>} sub="Addresses you saved and names you searched. They stay in this browser and are never sent to us." />
+      <PageHead left kicker="My searches" title={<>Your short list. <span className="dim">Saved in this browser.</span></>} sub="Addresses you saved and names you searched. They stay on this device and are never sent to us." />
       <section className="band tight">
-        <div className="wrap narrow">
-          {saved.length === 0 ? (
-            <div className="empty panel">
-              <Icon name="heart" size={22} />
-              <p>No saved addresses yet. Tap the heart on any result to keep it here.</p>
-              <Link className="btn btn-ink" to="/#search">Find your email</Link>
-            </div>
-          ) : (
-            <div className="panel results-panel">
-              <div className="panel-head"><p><b>{saved.length} saved</b></p></div>
-              <ul className="rows">{saved.map((s, i) => <ResultRow key={s.address} r={{ ...s, note: 'Saved ' + new Date(s.at || Date.now()).toLocaleDateString() + '. Check it is still free before you buy.' }} index={i + 1} saved={saved} />)}</ul>
-            </div>
-          )}
-          {recent.length > 0 && (
-            <div className="history">
-              <div className="ex-head"><h2 className="h3">Recent searches</h2><button type="button" className="link-btn" onClick={clearRecent}>Clear history</button></div>
-              <div className="recent left">
-                {recent.map(r => <Link key={r.name} className="recent-chip" to={'/?q=' + encodeURIComponent(r.name)}>{r.name}</Link>)}
+        <div className="wrap saved-grid">
+          <div>
+            {saved.length === 0 ? (
+              <div className="empty panel">
+                <Icon name="heart" size={22} />
+                <p>No saved addresses yet. Tap the heart on any result to keep it here.</p>
+                <Link className="btn btn-ink" to="/#search">Find your email</Link>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="panel results-panel">
+                <div className="panel-head"><p><b>{saved.length} saved {saved.length === 1 ? 'address' : 'addresses'}</b></p></div>
+                <ul className="rows">{saved.map((s, i) => <ResultRow key={s.address} r={{ ...s, note: 'Saved ' + new Date(s.at || Date.now()).toLocaleDateString() + '. We check it is still free before you pay.' }} index={i + 1} saved={saved} />)}</ul>
+              </div>
+            )}
+          </div>
+          <aside className="history-panel" aria-label="Search history">
+            <div className="hp-head"><h2 className="h3">Search history</h2>{recent.length > 0 && <button type="button" className="link-btn" onClick={clearRecent}>Clear</button>}</div>
+            {recent.length === 0 ? <p className="note">Names you search will show up here.</p> : (
+              <ul>
+                {recent.map(r => (
+                  <li key={r.name}><span>{r.name}</span><Link to={'/?q=' + encodeURIComponent(r.name)}>Search again</Link></li>
+                ))}
+              </ul>
+            )}
+          </aside>
         </div>
       </section>
     </>
@@ -442,7 +446,7 @@ export function Saved() {
 export function NotFound() {
   useMeta('Page not found · Posty', 'This page does not exist. Search for your new email address instead.', '/404', true);
   return (
-    <PageHead kicker="404" title={<>Return to <em className="s">sender.</em></>} sub="This page doesn't exist. Your new address might, though.">
+    <PageHead kicker="404" title={<>Return to <span className="dim">sender.</span></>} sub="This page doesn't exist. Your new address might, though.">
       <div className="cta-row"><Link className="btn btn-ink" to="/#search">Find your email</Link></div>
     </PageHead>
   );

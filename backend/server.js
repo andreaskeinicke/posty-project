@@ -50,6 +50,34 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'Posty API' });
 });
 
+// Deep health check: database reachable and domain lookups answering.
+// Called daily by .github/workflows/health-check.yml, which also keeps the
+// Supabase project from being paused for inactivity.
+app.get('/health/deep', async (req, res) => {
+  const checks = {};
+  try {
+    const { supabaseAdmin } = require('./config/supabase');
+    const { error } = await supabaseAdmin
+      .from('recommendation_cases')
+      .select('id', { count: 'exact', head: true });
+    if (error) console.error('Health check database error:', error.message);
+    checks.database = error ? 'error' : 'ok';
+  } catch (error) {
+    console.error('Health check database error:', error.message);
+    checks.database = 'error';
+  }
+  try {
+    const availability = require('./services/domainAvailabilityService');
+    const bootstrap = await availability._rdapBootstrap();
+    checks.lookups = bootstrap.size > 0 ? 'ok' : 'error';
+  } catch (error) {
+    console.error('Health check lookup error:', error.message);
+    checks.lookups = 'error';
+  }
+  const healthy = Object.values(checks).every(value => value === 'ok');
+  res.status(healthy ? 200 : 503).json({ status: healthy ? 'ok' : 'degraded', checks });
+});
+
 // Serve the built frontend (single-host deploy: same origin as the API).
 // index.html must never be cached or users keep the old bundle after deploys;
 // hashed static assets can cache forever.

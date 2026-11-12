@@ -70,7 +70,7 @@ export function Checkout({ api }) {
   if (!pick) {
     return (
       <section className="page-head"><div className="glow" aria-hidden="true" /><div className="wrap hero-in">
-        <h1>Which address <em className="s">did you want?</em></h1>
+        <h1>Which address <span className="dim">did you want?</span></h1>
         <p className="lede">This link doesn't name an address. Search for one and press Get this email.</p>
         <div className="cta-row"><Link className="btn btn-ink" to="/#search">Find your email</Link></div>
       </div></section>
@@ -99,7 +99,7 @@ export function Checkout({ api }) {
       <section className="page-head co-head">
         <div className="glow" aria-hidden="true" />
         <div className="wrap hero-in">
-          <h1>Almost yours, <em className="s">{first}.</em></h1>
+          <h1>Almost yours, <span className="dim">{first}.</span></h1>
           <p className="lede">A minute or two. You'll see every line before you pay.</p>
         </div>
       </section>
@@ -200,7 +200,7 @@ export function MovingIn() {
         <div className="glow" aria-hidden="true" />
         <div className="wrap hero-in">
           <span className="eyebrow flag">Moving in · step 3 of 3</span>
-          <h1>Your letters are <em className="s">on their way.</em></h1>
+          <h1>Your letters are <span className="dim">on their way.</span></h1>
           <p className="lede">Payment received. We're setting up {pick.address} now. There is one thing only you can do, and it takes about a minute.</p>
         </div>
       </section>
@@ -264,7 +264,7 @@ export function Welcome() {
         <div className="glow" aria-hidden="true" />
         <div className="wrap hero-in">
           <span className="pill"><i className="ok" />All 5 steps done · records verified</span>
-          <h1 className="wide-h">Welcome home, <em className="s">{pick.address}</em></h1>
+          <h1 className="wide-h">Welcome home, <span className="dim">{pick.address}</span></h1>
           <p className="lede">Your address is live and your first letter is waiting. From here on, we look after renewals and records quietly in the background.</p>
           <div className="cta-row">
             <a className="btn btn-blue" href="https://mail.google.com/" target="_blank" rel="noopener noreferrer">Open my inbox</a>
@@ -277,7 +277,7 @@ export function Welcome() {
           <div className="letter-top mono"><span>Inbox · {pick.address}</span><span>just now</span></div>
           <div className="letter-body">
             <div className="from"><Logo size={36} /><div><b>Posty</b><span>to {pick.address}</span></div></div>
-            <h2>Your first letter <em className="s">arrived.</em></h2>
+            <h2>Your first letter <span className="dim">arrived.</span></h2>
             <p>Hi {cap(pick.local)}. If you are reading this, everything works: the domain is yours, the records are in place, and mail sent to this address lands right here. Reply to this letter any time if something feels off, and we will help.</p>
             <div className="chips">{['MX', 'SPF', 'DKIM', 'DMARC'].map(r => <span key={r} className="rec mono"><Icon name="check" size={12} />{r}</span>)}</div>
           </div>
@@ -297,7 +297,7 @@ export function Welcome() {
       </div>
       <section className="band tight">
         <div className="wrap">
-          <div className="settle-head"><h2>Settle in at <em className="s">your own pace.</em></h2><p>Optional. None of this is needed for mail to work.</p></div>
+          <div className="settle-head"><h2>Settle in at <span className="dim">your own pace.</span></h2><p>Optional. None of this is needed for mail to work.</p></div>
           <div className="cards4">
             {settle.map(([ic, t, d, cta, to]) => (
               <div key={t} className="panel side-card"><span className="ic"><Icon name={ic} /></span><h3>{t}</h3><p>{d}</p><Link className="more" to={to}>{cta} →</Link></div>

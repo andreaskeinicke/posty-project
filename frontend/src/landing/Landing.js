@@ -2,15 +2,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import { candidates, domainsFor, rank, addressRows, money } from './names';
 import { addRecent, clearRecent, isSaved, toggleSaved, useStore } from './store';
 import HeroVisual, { useTypedPlaceholder } from './HeroVisual';
-import { Closing, Heart, Link, Logo, SearchBox, getUrl, navigate, useMeta, POSTY_MONTHLY, WORKSPACE_FROM } from './ui';
+import { Closing, Heart, Icon, Link, Logo, SearchBox, getUrl, navigate, useMeta, POSTY_MONTHLY, WORKSPACE_FROM } from './ui';
 
 // Home: pitch, search for an address, one button to get it.
 // Deep links: /?q=Maya+Lindqvist runs a search. The older &pick=local@domain opens checkout for that address.
 
 const FILTERS = [
-  ['all', 'Best first'], ['pro', 'Professional'], ['short', 'Short'], ['fun', 'Playful'], ['family', 'Family']
+  ['all', 'All'], ['pro', 'Professional'], ['short', 'Short'], ['fun', 'Playful'], ['family', 'Family']
 ];
 const FIRST = 4;
+const MAX = 12;
 
 // Hero copy (Paper "Site v5 · refined"). The headline test swaps HERO.h1 per variant.
 const HERO = {
@@ -18,17 +19,24 @@ const HERO = {
   sub: 'Pick an address on your own domain. We register it, set up Gmail by Google Workspace and look after it from there.'
 };
 
-export function ResultRow({ r, index, saved }) {
+export function ResultRow({ r, index, saved, endings, onEnding }) {
   const on = isSaved(saved, r.address);
   const top = index === 0;
+  const at = r.domain.indexOf('.');
+  const tld = r.domain.slice(at);
   return (
     <li className={'row' + (top ? ' top' : '')} style={{ animationDelay: Math.min(index, 8) * 40 + 'ms' }}>
       <div className="row-main">
         <div className="row-addr">
-          {top && <i className="dot" aria-hidden="true" />}
-          <span className="addr">{r.address}</span>
+          <span className="addr">{r.local}<span className="at">@</span>{r.domain}</span>
           {top && <span className="badge">Our pick</span>}
         </div>
+        {endings && endings.length > 1 && (
+          <div className="endings" role="group" aria-label={`Free endings for ${r.local}@${r.domain.slice(0, at)}`}>
+            <span>Free endings:</span>
+            {endings.map(t => <button key={t} type="button" className="end" aria-pressed={t === tld} onClick={() => onEnding(t)}>{t}</button>)}
+          </div>
+        )}
         <p className="row-note">{r.note}</p>
       </div>
       <div className="row-price"><b>{money(r.price)} / year</b><span>domain, at cost</span></div>
@@ -39,6 +47,13 @@ export function ResultRow({ r, index, saved }) {
     </li>
   );
 }
+
+const INCLUDES = [
+  ['globe', 'Your own domain', 'Registered in your name. You own it.'],
+  ['mail', 'Gmail by Google Workspace', 'The Gmail you know, on your address.'],
+  ['shield', 'Mail records set up', 'So your mail lands in inboxes, not spam.'],
+  ['chat', 'Help from Posty', 'We walk you through moving in.']
+];
 
 function readQuery() {
   const p = new URLSearchParams(window.location.search);
@@ -60,6 +75,7 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
   const [status, setStatus] = useState(first ? 'loading' : 'idle'); // idle | loading | ready | error
   const [query, setQuery] = useState(first);
   const [showAll, setShowAll] = useState(false);
+  const [ending, setEnding] = useState({}); // chosen ending per candidate
   const { recent, saved } = useStore();
   const inputRef = useRef(null);
   const reqId = useRef(0);
@@ -95,8 +111,16 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const rows = status === 'ready' ? addressRows(rank(list, availability, style), availability) : [];
-  const shown = showAll ? rows.slice(0, 16) : rows.slice(0, FIRST);
+  // One row per name idea; its free endings are chips on the row.
+  const ranked = status === 'ready' ? rank(list, availability, style) : [];
+  const freeCount = ranked.reduce((n, c) => n + c.avail.length, 0);
+  const groups = ranked.map(c => {
+    const key = c.local + '@' + c.base;
+    const t = c.avail.includes(ending[key]) ? ending[key] : c.avail[0];
+    return { key, endings: c.avail, r: addressRows([{ ...c, avail: [t] }], availability)[0] };
+  });
+  const rows = groups;
+  const shown = showAll ? groups.slice(0, MAX) : groups.slice(0, FIRST);
   const shownRecent = recent.filter(r => r.name.toLowerCase() !== query.toLowerCase()).slice(0, 5);
 
   return (
@@ -124,32 +148,39 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
           )}
 
           {status !== 'idle' && (
+            <div className="v5-results">
+            <div className="filters" role="group" aria-label="Style">
+              {FILTERS.map(([k, label]) => (
+                <button key={k} type="button" className="chip" aria-pressed={style === k} onClick={() => { setStyle(k); setShowAll(false); }}>{label}</button>
+              ))}
+            </div>
             <div className="panel results-panel" aria-live="polite">
               <div className="panel-head">
                 <p>
                   {status === 'loading' && <>Checking addresses for “{query}”…</>}
-                  {status === 'ready' && <><b>{rows.length} {rows.length === 1 ? 'address' : 'addresses'} available</b> for “{query}”, best first</>}
+                  {status === 'ready' && <><b>{freeCount} {freeCount === 1 ? 'address' : 'addresses'} free</b> for “{query}”, best first</>}
                   {status === 'error' && <>We couldn't check domains just now.</>}
                 </p>
-                {status === 'ready' && <span className="live">{api.demo ? 'Simulated · demo' : 'Checked live · just now'}</span>}
-              </div>
-              <div className="filters" role="group" aria-label="Style">
-                {FILTERS.map(([k, label]) => (
-                  <button key={k} type="button" className="chip" aria-pressed={style === k} onClick={() => { setStyle(k); setShowAll(false); }}>{label}</button>
-                ))}
+                {status === 'ready' && <span className="live">{api.demo ? 'Simulated · demo' : 'Checked live just now'}</span>}
               </div>
               {status === 'loading' && <ul className="rows">{[0, 1, 2].map(i => <li key={i} className="skeleton" />)}</ul>}
               {status === 'ready' && rows.length > 0 && (
-                <ul className="rows">{shown.map((r, i) => <ResultRow key={r.address + style} r={r} index={i} saved={saved} />)}</ul>
+                <ul className="rows">{shown.map((g, i) => <ResultRow key={g.key + style} r={g.r} index={i} saved={saved} endings={g.endings} onEnding={t => setEnding(e => ({ ...e, [g.key]: t }))} />)}</ul>
               )}
               {status === 'ready' && !rows.length && <p className="note pad">Nothing free in this style. Try another style, or add a middle name.</p>}
               {status === 'error' && <p className="note pad">Try again in a moment.</p>}
               {status === 'ready' && rows.length > 0 && (
                 <div className="panel-foot">
-                  <span>Only addresses you can actually get. Registered in your name, so you own it.</span>
-                  {!showAll && rows.length > FIRST && <button type="button" className="link-btn" onClick={() => setShowAll(true)}>Show {Math.min(rows.length, 16) - FIRST} more →</button>}
+                  <span>Only addresses you can actually get.</span>
+                  {!showAll && rows.length > FIRST && <button type="button" className="link-btn" onClick={() => setShowAll(true)}>Show {Math.min(rows.length, MAX) - FIRST} more</button>}
                 </div>
               )}
+            </div>
+            <aside className="v5-includes">
+              <h2>Every address includes</h2>
+              <ul>{INCLUDES.map(([ic, h, p]) => <li key={h}><span className="v5-tile"><Icon name={ic} size={18} /></span><div><b>{h}</b><span>{p}</span></div></li>)}</ul>
+              <div className="inc-tot"><span>All in, for most people</span><b>about $13 / month</b></div>
+            </aside>
             </div>
           )}
           {status === 'idle' && <HeroVisual />}

@@ -847,3 +847,29 @@ body:has(.pl){background:#FFFFFF;margin:0}
   .pl .v5-bt li .bt-rec.none{display:none}
   .pl .bt-h{padding:20px 20px 4px}
 }
+
+/* search results (Paper v5 · search results) */
+.pl .v5-results{align-self:stretch;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:32px;align-items:start;margin-top:28px;text-align:left}
+.pl .v5-results>.filters{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:8px;padding:0}
+.pl .v5-results .chip{min-height:32px;padding:0 12px;font-size:14px}
+.pl .v5-results .chip[aria-pressed=true]{background:var(--ink);color:#fff}
+.pl .v5-results .results-panel{margin:0}
+.pl .v5-results .results-panel .rows{margin:0}
+.pl .v5-results .results-panel .row:first-child{border-top:0}
+.pl .row-addr .addr{font-size:20px}
+.pl .row-addr .at{color:#8F8F8F;font-weight:400}
+.pl .endings{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:10px 0 2px;font-size:13px;color:var(--sub)}
+.pl .endings>span{margin-right:4px}
+.pl .end{border:1px solid var(--line);background:#fff;border-radius:6px;padding:3px 9px;font-size:13px;color:var(--ink)}
+.pl .end[aria-pressed=true]{background:#EAF3FD;border-color:#CFE3FA;color:#2F72BE}
+.pl .v5-includes{background:#F7F7F7;border-radius:8px;padding:28px}
+.pl .v5-includes h2{font-size:16px;font-weight:500;letter-spacing:-.01em;margin:0 0 20px;max-width:none}
+.pl .v5-includes ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:20px}
+.pl .v5-includes li{display:flex;gap:14px;align-items:flex-start}
+.pl .v5-includes .v5-tile{background:#fff;width:36px;height:36px}
+.pl .v5-includes li div{display:flex;flex-direction:column;gap:2px}
+.pl .v5-includes li b{font-weight:500;font-size:15px}
+.pl .v5-includes li span{font-size:14px;color:var(--sub)}
+.pl .inc-tot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:24px;padding-top:20px;font-size:14px;color:var(--sub)}
+.pl .inc-tot b{color:var(--ink);font-weight:500}
+@media (max-width:900px){.pl .v5-results{grid-template-columns:1fr}.pl .row-addr .addr{font-size:18px}}

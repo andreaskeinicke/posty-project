@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { candidates, domainsFor, rank, addressRows, money } from './names';
+import { candidates, domainsFor, rank, addressRows, money, nameProblem } from './names';
 import { addRecent, clearRecent, isSaved, toggleSaved, useStore } from './store';
 import { headline, track } from './experiment';
 import HeroVisual, { useTypedPlaceholder } from './HeroVisual';
@@ -171,7 +171,7 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
               {status === 'ready' && rows.length > 0 && (
                 <ul className="rows">{shown.map((g, i) => <ResultRow key={g.key + style} r={g.r} index={i} saved={saved} endings={g.endings} onEnding={t => setEnding(e => ({ ...e, [g.key]: t }))} />)}</ul>
               )}
-              {status === 'ready' && !rows.length && <p className="note pad">Nothing free in this style. Try another style, or add a middle name.</p>}
+              {status === 'ready' && !rows.length && <p className="note pad">{nameProblem(query) || 'Nothing free in this style. Try another style, or add a middle name.'}</p>}
               {status === 'error' && <p className="note pad">Try again in a moment.</p>}
               {status === 'ready' && rows.length > 0 && (
                 <div className="panel-foot">

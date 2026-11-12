@@ -53,3 +53,13 @@ test('TLDs missing from the IANA bootstrap use the override RDAP server', async 
     global.fetch = realFetch;
   }
 });
+
+test('very short names are treated as premium, never as free', async () => {
+  for (const d of ['ob.me', 'js.com', 'abc.xyz', 'abc.co']) {
+    const r = await service._performCheck(d);
+    assert.strictEqual(r.status, 'premium', d);
+    assert.strictEqual(r.available, false, d);
+  }
+  assert.strictEqual(service._isPremiumLength('abc.com'), false);
+  assert.strictEqual(service._isPremiumLength('obennett.me'), false);
+});

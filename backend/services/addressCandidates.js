@@ -220,18 +220,24 @@ function domainsFor(list) {
 
 // availability: { [domain]: { available: bool, price?: number } }
 // Returns candidates that have at least one free ending, best first, with `avail` endings.
+// Endings that never lead a row or the list (Andreas, Nov 12: .me looks less attractive).
+const LAST_ENDINGS = ['.me'];
+const endingRank = t => (LAST_ENDINGS.includes(t) ? 1 : 0);
+
 function rank(list, availability, style) {
   const seen = {};
   const picked = [];
   for (const c of list) {
     if (style !== 'all' && c.style !== style) continue;
-    const avail = c.tlds.filter(t => availability[c.base + t] && availability[c.base + t].available);
+    const avail = c.tlds.filter(t => availability[c.base + t] && availability[c.base + t].available)
+      .sort((a, b) => endingRank(a) - endingRank(b));
     if (!avail.length) continue;
     seen[c.local] = (seen[c.local] || 0) + 1;
     if (style === 'all' && seen[c.local] > 3) continue; // keep prefixes varied
     picked.push({ ...c, avail });
   }
-  return picked;
+  // Addresses that are only free on a last-place ending go to the bottom.
+  return [...picked.filter(c => !endingRank(c.avail[0])), ...picked.filter(c => endingRank(c.avail[0]))];
 }
 
 const TLD_NOTE = {

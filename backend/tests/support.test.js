@@ -373,3 +373,39 @@ test('admin routes need the support admin token', async () => {
     assert.deepStrictEqual(await (await fetch(`${base}/admin/escalations`, auth)).json(), { escalations: [] });
   });
 });
+
+// ---------- journey context ----------
+
+const { pageContext } = require('../support/agent');
+
+test('page context is validated: unknown stages, bad addresses and markup are dropped', () => {
+  assert.strictEqual(pageContext(null), null);
+  assert.strictEqual(pageContext({ stage: 'admin' }), null);
+  const c = pageContext({ stage: 'search', query: 'Anna <script>K</script>', address: 'not-an-email', plan: 'gold',
+    addresses: ['anna@keinicke.dk', 'bad', 'x'.repeat(300) + '@a.com', ...Array.from({ length: 12 }, (_, i) => `a${i}@b.com`)] });
+  assert.strictEqual(c.stage, 'search');
+  assert.ok(!/[<>]/.test(c.query));
+  assert.strictEqual(c.address, undefined);
+  assert.strictEqual(c.plan, undefined);
+  assert.strictEqual(c.addresses.length, 8);
+  assert.strictEqual(c.addresses[0], 'anna@keinicke.dk');
+});
+
+test('the model is told where the customer is, and the stage is logged', async () => {
+  const client = fakeClient([text('A .dk reads well in Denmark.')]);
+  const { agent: a, signals } = agent(client);
+  await a.respond({ messages: [{ role: 'user', content: 'Which ending is best?' }], page: { stage: 'search', query: 'Anna Keinicke', addresses: ['anna@keinicke.dk', 'a@keinicke.com'] } });
+  assert.match(client.calls[0].system, /search results, choosing an address/);
+  assert.match(client.calls[0].system, /anna@keinicke\.dk/);
+  assert.strictEqual(signals.rows[0].meta.stage, 'search');
+  const rep = weeklyReport(signals.rows);
+  assert.deepStrictEqual(rep.byStage, { search: 1 });
+});
+
+test('checkout context never unlocks order tools', async () => {
+  const client = fakeClient([text('You pay the domain and the first month today.')]);
+  const { agent: a } = agent(client);
+  await a.respond({ messages: [{ role: 'user', content: 'What do I pay today?' }], page: { stage: 'order', address: 'anna@anna.com' } });
+  assert.ok(!client.calls[0].tools.some(t => t.name === 'check_setup'), 'a page claiming to be an order page gets no setup tool without the order link');
+  assert.match(client.calls[0].system, /Order context:\nNone/);
+});

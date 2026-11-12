@@ -43,3 +43,23 @@
 .sc-form button:disabled { opacity: .45; cursor: default; }
 .sc-fine { margin: 0; font-size: 11px; color: var(--mute, #8A94A6); }
 .sc .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.sc-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14px; color: var(--slate, #5A6577); padding: 4px 2px; }
+.sc-line .sc-dot { margin-top: 0; }
+.sc-line .link-btn { background: none; border: 0; padding: 0; font: inherit; font-weight: 600; color: var(--blue, #3F7FE6); cursor: pointer; }
+.sc-compact { box-shadow: none; }
+
+/* Setup check (order page) */
+.scheck { background: var(--white, #fff); border: 1px solid var(--line, #E6ECF4); border-radius: 20px; padding: 18px; display: flex; flex-direction: column; gap: 12px; color: var(--ink, #141A26); font-family: var(--f-body, ui-sans-serif, system-ui, sans-serif); }
+.scheck-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.scheck-head h3 { margin: 0 0 2px; font-size: 17px; }
+.scheck-head p { margin: 0; font-size: 13px; color: var(--slate, #5A6577); }
+.scheck-btn { border: 1px solid var(--line, #E6ECF4); background: #fff; border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.scheck ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.scheck li { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.45; }
+.scheck li b { display: block; font-weight: 600; }
+.scheck li span { color: var(--slate, #5A6577); }
+.scheck-mark { flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; background: var(--sky, #EAF2FD); color: var(--blue, #3F7FE6); }
+.scheck-ok .scheck-mark { background: var(--mint, #ECF6F0); color: var(--ok, #1E8F5C); }
+.scheck-wrong .scheck-mark, .scheck-missing .scheck-mark { background: var(--blush, #FDEFEC); color: var(--flag, #D4553A); }
+.scheck-warn .scheck-mark { background: var(--peach, #FBF3EA); color: #B7791F; }
+.scheck-next { margin: 0; padding: 10px 12px; border-radius: 12px; background: var(--sky-2, #F5F9FF); font-size: 14px; }

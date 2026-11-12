@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import SupportChat from './SupportChat';
 import { candidates, domainsFor, rank, addressRows, money } from './names';
 import { addRecent, clearRecent, isSaved, toggleSaved, useStore } from './store';
 import { Closing, Heart, Link, SearchBox, getUrl, navigate, useMeta, POSTY_MONTHLY, WORKSPACE_FROM } from './ui';
@@ -140,6 +141,12 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
                 <div className="panel-foot">
                   <span>Only addresses you can actually get. Registered in your name, so you own it.</span>
                   {!showAll && rows.length > FIRST && <button type="button" className="link-btn" onClick={() => setShowAll(true)}>Show {Math.min(rows.length, 16) - FIRST} more →</button>}
+                </div>
+              )}
+              {status === 'ready' && rows.length > 0 && (
+                <div className="pad-x">
+                  <SupportChat compact stage="search" title="Ask Posty" intro="Not sure which one to pick?"
+                    context={{ query, addresses: shown.map(r => r.address) }} />
                 </div>
               )}
             </div>

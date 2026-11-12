@@ -9,10 +9,19 @@ import './SupportChat.css';
  */
 const SUGGESTIONS = {
   help: ['Do I own the domain?', 'How do I add it to my phone?', 'Can I bring my old mail?'],
-  order: ['Where do I find the Google code?', 'Check my setup', 'Why is my mail in spam?']
+  search: ['Which of these would you pick?', 'Is .com better than .dk?', 'What happens when I press Get?'],
+  checkout: ['What do I pay today?', 'Starter or Standard?', 'What happens after I pay?'],
+  order: ['Where do I find the Google code?', 'Check my setup', 'Why is my mail in spam?'],
+  welcome: ['Add it to my phone', 'Bring my old mail', 'What is DKIM?']
 };
 
-export default function SupportChat({ orderToken = null, title = 'Ask Posty', intro }) {
+/**
+ * stage: where the customer is (search, checkout, order, welcome, help). context: what the page
+ * knows (query, address, plan, shown addresses), sent with each question. compact: a single
+ * quiet line that opens into the chat, for pages where the chat should not compete with the task.
+ */
+export default function SupportChat({ orderToken = null, title = 'Ask Posty', intro, stage = orderToken ? 'order' : 'help', context = null, compact = false }) {
+  const [open, setOpen] = useState(!compact);
   const [enabled, setEnabled] = useState(false);
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState('');
@@ -43,7 +52,8 @@ export default function SupportChat({ orderToken = null, title = 'Ask Posty', in
     try {
       const r = await axios.post('/api/support/chat', {
         messages: next.map(({ role, content: c }) => ({ role, content: c })),
-        ...(orderToken ? { orderToken } : {})
+        ...(orderToken ? { orderToken } : {}),
+        context: { ...(context || {}), stage }
       });
       setMessages([...next, { role: 'assistant', content: r.data.reply, escalated: r.data.escalated, nextStep: r.data.nextStep }]);
     } catch (err) {
@@ -55,10 +65,20 @@ export default function SupportChat({ orderToken = null, title = 'Ask Posty', in
     }
   };
 
-  const chips = SUGGESTIONS[orderToken ? 'order' : 'help'];
+  const chips = SUGGESTIONS[stage] || SUGGESTIONS.help;
+
+  if (!open) {
+    return (
+      <div className="sc-line">
+        <span className="sc-dot" aria-hidden="true" />
+        <span>{intro || 'Questions? Ask Posty.'}</span>
+        <button type="button" className="link-btn" onClick={() => setOpen(true)}>{title} →</button>
+      </div>
+    );
+  }
 
   return (
-    <section className="sc" aria-label={title}>
+    <section className={'sc' + (compact ? ' sc-compact' : '')} aria-label={title}>
       <div className="sc-head">
         <span className="sc-dot" aria-hidden="true" />
         <div>
@@ -83,18 +103,21 @@ export default function SupportChat({ orderToken = null, title = 'Ask Posty', in
         {error && <p className="sc-error" role="alert">{error}</p>}
       </div>
 
-      <form className="sc-form" onSubmit={e => { e.preventDefault(); send(draft); }}>
-        <label className="sr" htmlFor={orderToken ? 'sc-in-order' : 'sc-in'}>Your question</label>
+      {/* Not a <form>: the chat can sit inside the checkout form. */}
+      <div className="sc-form" role="group" aria-label="Ask a question">
+        <label className="sr" htmlFor={'sc-in-' + stage}>Your question</label>
         <input
-          id={orderToken ? 'sc-in-order' : 'sc-in'}
+          id={'sc-in-' + stage}
           value={draft}
           maxLength={1500}
           autoComplete="off"
+          enterKeyHint="send"
           placeholder="Type a question"
           onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); send(draft); } }}
         />
-        <button type="submit" disabled={busy || !draft.trim()}>Send</button>
-      </form>
+        <button type="button" disabled={busy || !draft.trim()} onClick={() => send(draft)}>Send</button>
+      </div>
       <p className="sc-fine">Please do not share passwords or card numbers here. We never ask for them.</p>
     </section>
   );

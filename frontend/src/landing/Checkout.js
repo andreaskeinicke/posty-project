@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import SupportChat from './SupportChat';
 import { priceOf, money } from './names';
 import { CopyButton, HELLO, Icon, Link, Logo, navigate, useMeta, POSTY_MONTHLY, WORKSPACE_FROM, WORKSPACE_STANDARD_FROM } from './ui';
 
@@ -167,6 +168,8 @@ export function Checkout({ api }) {
             <li><Icon name="shield" size={15} />Danish company</li>
           </ul>
           {api.demo && <p className="fine">Demo: nothing is bought or charged.</p>}
+          <SupportChat compact stage="checkout" title="Ask before you pay" intro="Questions about what happens next?"
+            context={{ address: pick.address, plan }} />
         </aside>
       </form>
     </>
@@ -302,6 +305,10 @@ export function Welcome() {
             {settle.map(([ic, t, d, cta, to]) => (
               <div key={t} className="panel side-card"><span className="ic"><Icon name={ic} /></span><h3>{t}</h3><p>{d}</p><Link className="more" to={to}>{cta} →</Link></div>
             ))}
+          </div>
+          <div className="wl-help">
+            <SupportChat stage="welcome" title="Ask Posty" intro="Help with your phone, old mail, DKIM or family addresses."
+              context={{ address: pick.address }} />
           </div>
           <p className="fine center-t">Preview: this is the page you land on once setup is done.</p>
         </div>

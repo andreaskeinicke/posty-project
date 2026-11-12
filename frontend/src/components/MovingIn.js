@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import './MovingIn.css';
 import SupportChat from '../landing/SupportChat';
+import SetupCheck from '../landing/SetupCheck';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 const POLL_MS = 5000;
@@ -91,6 +92,7 @@ function MovingIn({ sessionId, token: initialToken }) {
         </section>
 
         <aside className="mi-side">
+          <SetupCheck token={tokenRef.current} refreshKey={view.doneCount} />
           <SupportChat orderToken={tokenRef.current} title="Ask about your setup" intro="We can check your domain's mail records and tell you the next step. Refunds and account changes go to a person." />
           <div className="mi-note"><h3>We keep you posted</h3><p>Every step lands in your current inbox, so you can close this page. Nothing to watch.</p></div>
           <div className="mi-note"><h3>A real person if you need one</h3><p>Stuck on the Google step? Write to us and a person replies, usually the same day.</p></div>

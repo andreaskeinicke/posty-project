@@ -24,8 +24,6 @@ exports.createCheckoutSession = async (req, res) => {
       country: clip(req.body.country, 2).toUpperCase(),
       workspacePlan: req.body.workspacePlan === 'standard' ? 'standard' : 'starter'
     };
-    // The site sends `address`; older clients send `emailAddress`.
-    const emailAddress = details.emailAddress || req.body.emailAddress;
     const userId = req.userId || null; // From optionalAuth middleware; null for guests
     const user = req.user || null;
 

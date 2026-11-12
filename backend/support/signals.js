@@ -105,8 +105,14 @@ function weeklyReport(rows, { now = new Date(), top = 5 } = {}) {
   const escalated = rows.filter(r => r.escalated).length;
   const answered = rows.filter(r => r.kind === 'chat_turn');
   const solved = answered.filter(r => r.resolved_by_agent === true).length;
+  const byStage = {};
+  for (const r of rows) {
+    const st = (r.meta && r.meta.stage) || 'unknown';
+    byStage[st] = (byStage[st] || 0) + 1;
+  }
   return {
     generatedAt: now.toISOString(),
+    byStage,
     total,
     escalated,
     solvedByAgentRate: answered.length ? Math.round((solved / answered.length) * 100) : null,
@@ -121,6 +127,7 @@ function reportMarkdown(rep) {
     '',
     `${rep.total} signals, ${rep.escalated} escalated to Andreas` +
       (rep.solvedByAgentRate === null ? '.' : `, ${rep.solvedByAgentRate}% of chat turns answered without a person.`),
+    Object.keys(rep.byStage || {}).length ? `Where people asked: ${Object.entries(rep.byStage).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', ')}.` : '',
     rep.injectionAttempts ? `${rep.injectionAttempts} messages tried to change the agent's rules (no action possible; logged).` : '',
     '',
     '| Topic | Count | Escalated | Proposed fix |',

@@ -11,7 +11,8 @@ const { stalledOrders } = require('../support/coach');
 /**
  * Support agent and setup coach.
  *   GET  /api/support/status                       { enabled } (the widget asks first)
- *   POST /api/support/chat                         { messages, orderToken? } -> { reply, escalated, nextStep }
+ *   POST /api/support/chat                         { messages, orderToken?, context? } -> { reply, escalated, nextStep }
+ *                                                  context = { stage: search|checkout|order|welcome|help, query?, address?, plan?, addresses? }
  *   GET  /api/support/orders/:token/diagnostics    read-only DNS checks for that order's domain
  *   GET  /api/support/admin/weekly[?format=md]     learning-loop report (SUPPORT_ADMIN_TOKEN)
  *   GET  /api/support/admin/escalations            open escalations
@@ -45,11 +46,11 @@ function createRouter({ getS = getSupport, getF = getFulfilment, resolver } = {}
 
   const chatLimiter = rateLimit({ windowMs: 10 * 60 * 1000, max: 30, standardHeaders: true, legacyHeaders: false });
   router.post('/chat', chatLimiter, h(async (req, res) => {
-    const { messages, orderToken } = req.body || {};
+    const { messages, orderToken, context } = req.body || {};
     if (!Array.isArray(messages) || !messages.length) return res.status(400).json({ error: 'messages required' });
     if (messages.length > 40) return res.status(400).json({ error: 'conversation too long' });
     const order = await orderFor(orderToken);
-    const out = await req.support.agent.respond({ messages, order, source: order ? 'order_page' : 'help_page' });
+    const out = await req.support.agent.respond({ messages, order, source: order ? 'order_page' : 'site', page: context });
     res.json(out);
   }));
 

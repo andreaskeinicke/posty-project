@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Landing from './Landing';
 import { HowItWorks, Pricing, Examples, Questions, Compare, Agents, Saved, NotFound } from './pages';
-import { Checkout, CheckoutHeader, MovingIn, Welcome } from './Checkout';
+import { Checkout, MovingIn, Welcome } from './Checkout';
 import { Footer, Nav } from './ui';
 import './landing.css';
 
@@ -47,7 +47,7 @@ export default function Site({ api, onOpenChat, initialName }) {
   }
   return (
     <div className="pl">
-      {path === '/get' ? <CheckoutHeader at={1} /> : <Nav path={path === '/faq' ? '/questions' : path} />}
+      <Nav path={path === '/faq' ? '/questions' : path} />
       <main id="top" key={path + search}>{page}</main>
       <Footer />
     </div>

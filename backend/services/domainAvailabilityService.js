@@ -89,6 +89,14 @@ class DomainAvailabilityService {
       method: 'unknown'
     };
 
+    // Very short names are sold at registry premium prices that RDAP and WHOIS
+    // do not show (ob.me is $22,000, zkq.co $6,160). Never offer them as free.
+    if (this._isPremiumLength(domain)) {
+      result.status = 'premium';
+      result.method = 'length-rule';
+      return result;
+    }
+
     try {
       // Step 1: registered domains virtually always have NS records
       const hasNameservers = await this._hasNameservers(domain);
@@ -265,6 +273,18 @@ class DomainAvailabilityService {
   }
 
   /**
+   * True for labels that registries price as premium: 1-2 characters on any
+   * ending, 3 characters on endings that sell short names at a premium.
+   */
+  _isPremiumLength(domain) {
+    const dot = domain.indexOf('.');
+    const label = domain.slice(0, dot);
+    const tld = domain.slice(dot);
+    if (label.length <= 2) return true;
+    return label.length === 3 && ['.co', '.io', '.xyz', '.page', '.dev', '.app', '.club', '.email', '.family'].includes(tld);
+  }
+
+  /**
    * Rough retail registration price per TLD (USD/year).
    * TODO: replace with live registrar pricing before scaling.
    */
@@ -272,8 +292,9 @@ class DomainAvailabilityService {
     const tld = domain.slice(domain.indexOf('.'));
     const prices = {
       '.com': 13, '.net': 14, '.org': 13, '.dk': 12, '.eu': 9,
-      '.io': 45, '.me': 22, '.co': 30, '.email': 25, '.dev': 15,
-      '.app': 17, '.xyz': 13, '.club': 14, '.online': 30, '.uk': 9
+      '.io': 45, '.me': 22, '.co': 30, '.email': 28, '.dev': 15,
+      '.app': 17, '.xyz': 13, '.club': 19, '.online': 30, '.uk': 9,
+      '.page': 12, '.family': 36
     };
     return prices[tld] || 20;
   }

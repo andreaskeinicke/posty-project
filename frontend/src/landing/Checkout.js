@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { track } from './experiment';
 import { priceOf, money } from './names';
 import { CopyButton, HELLO, Icon, Link, Logo, navigate, useMeta, POSTY_MONTHLY, WORKSPACE_FROM } from './ui';
 import { Photo } from './pages';
@@ -86,7 +87,7 @@ export function Checkout({ api }) {
     setStage('working'); setError('');
     try {
       const res = await api.startCheckout({ address: pick.address, domain: pick.domain, price, plan, ...form });
-      if (res && res.url) { window.location.href = res.url; return; }
+      if (res && res.url) { if (!api.demo) track('checkout'); window.location.href = res.url; return; }
       navigate('/moving-in?address=' + encodeURIComponent(pick.address) + '&demo=1');
     } catch (err) {
       setError(`We couldn't open checkout. Try again in a moment, or write to ${HELLO}.`);

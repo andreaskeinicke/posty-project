@@ -953,3 +953,5 @@ body:has(.pl){background:#FFFFFF;margin:0}
 @keyframes om-pop{from{opacity:0;transform:scale(.4) rotate(-20deg)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.om-word,.is-boomer .om-boomer,.om-wink{animation:none}}
 .closing-line h2 .om-line{display:block}
+.results-panel .rows{transition:opacity .2s}
+.results-panel.is-refreshing .rows{opacity:.55}

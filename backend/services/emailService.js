@@ -2,11 +2,8 @@
  * Email Notification Service
  * Handles sending verification and notification emails to users
  *
- * NOTE: This is a basic implementation. For production, integrate with:
- * - SendGrid
- * - AWS SES
- * - Postmark
- * - Resend
+ * Sends through Resend when EMAIL_PROVIDER=resend, RESEND_API_KEY and
+ * EMAIL_FROM are all set. Otherwise emails are only written to the log.
  */
 
 class EmailService {
@@ -22,20 +19,23 @@ class EmailService {
    * TODO: Integrate with actual email provider
    */
   _initialize() {
-    // Check if email provider is configured
-    const provider = process.env.EMAIL_PROVIDER; // 'sendgrid', 'ses', 'postmark', 'console'
+    // EMAIL_PROVIDER: 'resend' sends real email; anything else logs to console.
+    const provider = (process.env.EMAIL_PROVIDER || 'console').toLowerCase();
+    this.initialized = true;
 
-    if (!provider || provider === 'console') {
-      console.log('📧 Email Service: Using console mode (emails will be logged)');
-      this.emailProvider = 'console';
-      this.initialized = true;
-      return;
+    if (provider === 'resend') {
+      if (process.env.RESEND_API_KEY && process.env.EMAIL_FROM) {
+        this.emailProvider = 'resend';
+        console.log(`📧 Email Service: sending through Resend as ${process.env.EMAIL_FROM}`);
+        return;
+      }
+      console.warn('⚠️  EMAIL_PROVIDER=resend needs RESEND_API_KEY and EMAIL_FROM; using console mode');
+    } else if (provider !== 'console') {
+      console.warn(`⚠️  Unknown EMAIL_PROVIDER "${provider}", using console mode`);
     }
 
-    // TODO: Initialize actual email provider based on config
-    console.warn('⚠️  Email provider not configured, using console mode');
+    console.log('📧 Email Service: Using console mode (emails will be logged)');
     this.emailProvider = 'console';
-    this.initialized = true;
   }
 
   /**
@@ -134,7 +134,7 @@ class EmailService {
 
     console.log(`\n📧 Sending email to ${to}`);
     console.log(`   Subject: ${subject}`);
-    console.log(`   Type: ${metadata.type}`);
+    console.log(`   Type: ${metadata?.type || 'general'}`);
 
     // Console mode - just log the email
     if (this.emailProvider === 'console') {
@@ -153,10 +153,26 @@ class EmailService {
       };
     }
 
-    // TODO: Implement actual email sending with provider
-    // Example for SendGrid:
-    // const msg = { to, from: process.env.FROM_EMAIL, subject, text, html };
-    // await sgMail.send(msg);
+    if (this.emailProvider === 'resend') {
+      const body = { from: process.env.EMAIL_FROM, to: [to], subject, text };
+      if (html) body.html = html;
+      if (process.env.EMAIL_REPLY_TO) body.reply_to = process.env.EMAIL_REPLY_TO;
+
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        signal: AbortSignal.timeout(10000),
+        headers: {
+          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(`Resend rejected the email (${response.status}): ${result.message || 'unknown error'}`);
+      }
+      return { success: true, provider: 'resend', id: result.id, to, subject };
+    }
 
     throw new Error('Email provider not implemented');
   }

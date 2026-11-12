@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { candidates, domainsFor, rank, addressRows, money } from './names';
 import { addRecent, clearRecent, isSaved, toggleSaved, useStore } from './store';
-import { Closing, Heart, Link, SearchBox, getUrl, navigate, useMeta, POSTY_MONTHLY, WORKSPACE_FROM } from './ui';
+import HeroVisual, { useTypedPlaceholder } from './HeroVisual';
+import { Closing, Heart, Link, Logo, SearchBox, getUrl, navigate, useMeta, POSTY_MONTHLY, WORKSPACE_FROM } from './ui';
 
 // Home: pitch, search for an address, one button to get it.
 // Deep links: /?q=Maya+Lindqvist runs a search. The older &pick=local@domain opens checkout for that address.
@@ -10,6 +11,12 @@ const FILTERS = [
   ['all', 'Best first'], ['pro', 'Professional'], ['short', 'Short'], ['fun', 'Playful'], ['family', 'Family']
 ];
 const FIRST = 4;
+
+// Hero copy (Paper "Site v5 · refined"). The headline test swaps HERO.h1 per variant.
+const HERO = {
+  h1: 'Email with your name on it.',
+  sub: 'Pick an address on your own domain. We register it, set up Gmail by Google Workspace and look after it from there.'
+};
 
 export function ResultRow({ r, index, saved }) {
   const on = isSaved(saved, r.address);
@@ -56,6 +63,7 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
   const { recent, saved } = useStore();
   const inputRef = useRef(null);
   const reqId = useRef(0);
+  const typed = useTypedPlaceholder(!name, 'Type your name');
 
   const search = async value => {
     const q = value.trim();
@@ -96,13 +104,13 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
       <section className="hero" id="search">
         <div className="glow" aria-hidden="true" />
         <div className="wrap hero-in">
-          <span className="badge-soft">Your own domain, with Gmail by Google Workspace</span>
-          <h1>Get your dream email today.</h1>
-          <p className="lede">Search a name, pick an address, press one button. We register the domain, set up the inbox and handle the rest.</p>
+          <span className="badge-soft"><Logo size={18} />Your own domain, with Gmail by Google Workspace</span>
+          <h1>{HERO.h1}</h1>
+          <p className="lede">{HERO.sub}</p>
 
-          <SearchBox big value={name} onChange={setName} onSubmit={search} inputRef={inputRef} placeholder="Type your name, e.g. Anna Keinicke" />
+          <SearchBox big value={name} onChange={setName} onSubmit={search} inputRef={inputRef} placeholder={typed} />
           <p className="hint">
-            Try your name, your family, or your business.
+            About $13 a month, all in. Cancel any time, the domain stays yours.
             {onOpenChat && <><span className="dot-sep">·</span><button type="button" className="link-btn" onClick={onOpenChat}>Not sure? Let Posty suggest a few</button></>}
           </p>
           {shownRecent.length > 0 && (
@@ -144,6 +152,31 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
               )}
             </div>
           )}
+          {status === 'idle' && <HeroVisual />}
+        </div>
+      </section>
+
+      <section className="band">
+        <div className="wrap">
+          <h2>An address you can say out loud. <span className="dim">No numbers, no underscores, no spelling it twice for your bank.</span></h2>
+          <div className="pair">
+            <div className="pair-card">
+              <dl className="ba">
+                <dt>Before</dt><dd className="old">anna.keinicke84@hotmail.com</dd>
+                <dt>After</dt><dd className="new"><Logo size={22} />anna@keinicke.com</dd>
+              </dl>
+              <div><h3>Your name, at last</h3><p>Short and personal on a domain that carries your name. It works for the rest of your life, whoever you work for.</p></div>
+            </div>
+            <div className="pair-card">
+              <dl className="own">
+                <div><dt>Domain owner</dt><dd>You, by name</dd></div>
+                <div><dt>Mailbox</dt><dd>Google Workspace, your account</dd></div>
+                <div><dt>Mail records</dt><dd>MX · SPF · DKIM · DMARC, set up</dd></div>
+                <div><dt>Renewal</dt><dd>At cost, watched by Posty</dd></div>
+              </dl>
+              <div><h3>Yours, not ours</h3><p>The domain is registered to you and the mailbox is your own Google account. Posty sets it up and keeps it healthy.</p></div>
+            </div>
+          </div>
         </div>
       </section>
 

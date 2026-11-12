@@ -1,5 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from './store';
+import { X } from '@phosphor-icons/react/dist/csr/X';
+import { ArrowRight } from '@phosphor-icons/react/dist/csr/ArrowRight';
+import { At } from '@phosphor-icons/react/dist/csr/At';
+import { BookmarkSimple } from '@phosphor-icons/react/dist/csr/BookmarkSimple';
+import { ChatCircle } from '@phosphor-icons/react/dist/csr/ChatCircle';
+import { Check } from '@phosphor-icons/react/dist/csr/Check';
+import { CheckCircle } from '@phosphor-icons/react/dist/csr/CheckCircle';
+import { Circle } from '@phosphor-icons/react/dist/csr/Circle';
+import { ClockCounterClockwise } from '@phosphor-icons/react/dist/csr/ClockCounterClockwise';
+import { CreditCard } from '@phosphor-icons/react/dist/csr/CreditCard';
+import { DeviceMobile } from '@phosphor-icons/react/dist/csr/DeviceMobile';
+import { EnvelopeSimple } from '@phosphor-icons/react/dist/csr/EnvelopeSimple';
+import { GlobeSimple } from '@phosphor-icons/react/dist/csr/GlobeSimple';
+import { Heart as PHeart } from '@phosphor-icons/react/dist/csr/Heart';
+import { House } from '@phosphor-icons/react/dist/csr/House';
+import { Laptop } from '@phosphor-icons/react/dist/csr/Laptop';
+import { LockSimple } from '@phosphor-icons/react/dist/csr/LockSimple';
+import { MagnifyingGlass } from '@phosphor-icons/react/dist/csr/MagnifyingGlass';
+import { Minus } from '@phosphor-icons/react/dist/csr/Minus';
+import { Plus } from '@phosphor-icons/react/dist/csr/Plus';
+import { Question } from '@phosphor-icons/react/dist/csr/Question';
+import { ShieldCheck } from '@phosphor-icons/react/dist/csr/ShieldCheck';
+import { TrayArrowDown } from '@phosphor-icons/react/dist/csr/TrayArrowDown';
+import { User } from '@phosphor-icons/react/dist/csr/User';
+import { UsersThree } from '@phosphor-icons/react/dist/csr/UsersThree';
 
 export const POSTY_MONTHLY = 5;
 export const WORKSPACE_FROM = 7;
@@ -68,29 +93,18 @@ export function Address({ local, domain }) {
   return <span className="addr">{local}@{domain}</span>;
 }
 
+// Icons: Phosphor (MIT licence), weight "regular", as drawn in the Paper frames.
 const ICONS = {
-  search: <><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4 4" /></>,
-  history: <><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8.5" /><path d="M4 4v4.5h4.5" /><path d="M12 8v4l3 2" /></>,
-  check: <path d="M5 12.5l4.5 4.5L19 7.5" />,
-  mail: <><rect x="3.5" y="5.5" width="17" height="13" rx="2.5" /><path d="M4 7l8 6 8-6" /></>,
-  chat: <path d="M12 4.5c4.7 0 8 2.9 8 6.6s-3.3 6.6-8 6.6c-.9 0-1.8-.1-2.6-.3L5 19.5l1.1-3.4C4.8 14.9 4 13.1 4 11.1 4 7.4 7.3 4.5 12 4.5z" />,
-  shield: <><path d="M12 3.5l7 2.5v5.5c0 4.3-3 7.6-7 9-4-1.4-7-4.7-7-9V6l7-2.5z" /><path d="M9 12l2.2 2.2L15.5 10" /></>,
-  globe: <><circle cx="12" cy="12" r="8.5" /><path d="M3.5 12h17M12 3.5c2.4 2.4 3.5 5.3 3.5 8.5s-1.1 6.1-3.5 8.5c-2.4-2.4-3.5-5.3-3.5-8.5s1.1-6.1 3.5-8.5z" /></>,
-  card: <><rect x="3.5" y="6" width="17" height="12" rx="2.5" /><path d="M3.5 10h17M7 14.5h3" /></>,
-  phone: <><rect x="7" y="3.5" width="10" height="17" rx="2.5" /><path d="M11 17.5h2" /></>,
-  import: <><path d="M4 12h11M11 8l4 4-4 4" /><path d="M19 5v14" /></>,
-  people: <><circle cx="9" cy="9" r="3" /><path d="M3.5 19c.6-3 2.8-5 5.5-5s4.9 2 5.5 5" /><path d="M17 8v6M14 11h6" /></>,
-  lock: <><rect x="5" y="10.5" width="14" height="10" rx="2.5" /><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" /></>,
-  arrow: <path d="M5 12h13M13 7l5 5-5 5" />,
-  heart: <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" />
+  search: MagnifyingGlass, history: ClockCounterClockwise, check: Check, checkCircle: CheckCircle,
+  mail: EnvelopeSimple, chat: ChatCircle, shield: ShieldCheck, globe: GlobeSimple, card: CreditCard,
+  phone: DeviceMobile, laptop: Laptop, import: TrayArrowDown, user: User, people: UsersThree,
+  lock: LockSimple, arrow: ArrowRight, heart: PHeart, bookmark: BookmarkSimple, at: At,
+  home: House, help: Question, plus: Plus, minus: Minus, x: X
 };
 
-export function Icon({ name, size = 18, className }) {
-  return (
-    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      {ICONS[name]}
-    </svg>
-  );
+export function Icon({ name, size = 18, className, weight = 'regular' }) {
+  const C = ICONS[name] || Circle;
+  return <C className={className} size={size} weight={name === 'check' ? 'bold' : weight} aria-hidden="true" focusable="false" />;
 }
 
 export function Heart({ on }) {

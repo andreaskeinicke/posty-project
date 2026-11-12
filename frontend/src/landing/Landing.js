@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { candidates, domainsFor, rank, addressRows, money } from './names';
 import { addRecent, clearRecent, isSaved, toggleSaved, useStore } from './store';
-import { Closing, Heart, Link, SearchBox, getUrl, navigate, useMeta, POSTY_MONTHLY, WORKSPACE_FROM } from './ui';
+import { BeforeAfter, FloatCards, InboxDemo, Reveal, Scribble, useTypedPlaceholder } from './delight';
+import { Closing, Heart, Icon, Link, SearchBox, getUrl, navigate, useMeta, POSTY_MONTHLY, WORKSPACE_FROM } from './ui';
 
 // Home: pitch, search for an address, one button to get it.
 // Deep links: /?q=Maya+Lindqvist runs a search. The older &pick=local@domain opens checkout for that address.
@@ -27,7 +28,7 @@ export function ResultRow({ r, index, saved }) {
       <div className="row-price"><b>{money(r.price)} / year</b><span>domain, at cost</span></div>
       <div className="row-acts">
         <button type="button" className="icon-btn" aria-pressed={on} aria-label={on ? `Remove ${r.address} from saved` : `Save ${r.address}`} onClick={() => toggleSaved(r)}><Heart on={on} /></button>
-        <Link className={'btn ' + (top ? 'btn-blue' : 'btn-soft')} to={getUrl(r.address)}>Get this email</Link>
+        <Link className={'btn ' + (top ? 'btn-blue' : 'btn-soft')} to={getUrl(r.address)}><span>Get this email</span><Icon name="mail" size={16} className="btn-env" /></Link>
       </div>
     </li>
   );
@@ -56,6 +57,7 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
   const { recent, saved } = useStore();
   const inputRef = useRef(null);
   const reqId = useRef(0);
+  const typed = useTypedPlaceholder(!name, 'Type your name, e.g. Anna Keinicke');
 
   const search = async value => {
     const q = value.trim();
@@ -93,14 +95,15 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
 
   return (
     <>
-      <section className="hero" id="search">
+      <section className={'hero' + (status !== 'idle' ? ' has-results' : '')} id="search">
         <div className="glow" aria-hidden="true" />
         <div className="wrap hero-in">
-          <span className="badge-soft">Your own domain, with Gmail by Google Workspace</span>
-          <h1>Get your dream email today.</h1>
-          <p className="lede">Search a name, pick an address, press one button. We register the domain, set up the inbox and handle the rest.</p>
+          <FloatCards />
+          <span className="badge-soft rise"><i className="at-tile" aria-hidden="true">@</i>Your own domain, with Gmail by Google Workspace</span>
+          <h1 className="rise d1">Get your dream email <Scribble>today.</Scribble></h1>
+          <p className="lede rise d2">Search a name, pick an address, press one button. We register the domain, set up the inbox and handle the rest.</p>
 
-          <SearchBox big value={name} onChange={setName} onSubmit={search} inputRef={inputRef} placeholder="Type your name, e.g. Anna Keinicke" />
+          <SearchBox big value={name} onChange={setName} onSubmit={search} inputRef={inputRef} placeholder={typed} />
           <p className="hint">
             Try your name, your family, or your business.
             {onOpenChat && <><span className="dot-sep">·</span><button type="button" className="link-btn" onClick={onOpenChat}>Not sure? Let Posty suggest a few</button></>}
@@ -148,25 +151,56 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
       </section>
 
       <section className="band">
+        <div className="wrap split2 center story">
+          <Reveal className="head">
+            <span className="eyebrow">Sound familiar?</span>
+            <h2>You picked that address in 2004. <span className="dim">It's time for one you're proud to say out loud.</span></h2>
+            <p className="sub">No numbers, no old nicknames, no internet provider in the name. Just you, on your own domain, for good.</p>
+          </Reveal>
+          <BeforeAfter />
+        </div>
+      </section>
+
+      <section className="band">
         <div className="wrap">
-          <span className="eyebrow">After you press the button</span>
-          <h2>From search to sent. <span className="dim">Usually the same day, with nothing to configure.</span></h2>
-          <ol className="grid3">
-            <li><span className="n">01</span><h3>We register your domain</h3><p>Bought at cost and registered in your name. You own it, not us.</p></li>
-            <li><span className="n">02</span><h3>We set up your inbox</h3><p>Your Google Workspace account, mail records and security settings, done for you.</p></li>
-            <li><span className="n">03</span><h3>You start sending</h3><p>Sign in to Gmail with your new address on your phone and laptop. We help bring your old mail along.</p></li>
-          </ol>
+          <Reveal>
+            <span className="eyebrow">After you press the button</span>
+            <h2>From search to sent. <span className="dim">Usually the same day, with nothing to configure.</span></h2>
+          </Reveal>
+          <Reveal as="ol" className="grid3 stagger">
+            <li><span className="n">01</span><span className="step-ic t-blue"><Icon name="globe" size={22} /></span><h3>We register your domain</h3><p>Bought at cost and registered in your name. You own it, not us.</p></li>
+            <li><span className="n">02</span><span className="step-ic t-peach"><Icon name="mail" size={22} /></span><h3>We set up your inbox</h3><p>Your Google Workspace account, mail records and security settings, done for you.</p></li>
+            <li><span className="n">03</span><span className="step-ic t-mint"><Icon name="phone" size={22} /></span><h3>You start sending</h3><p>Sign in to Gmail with your new address on your phone and laptop. We help bring your old mail along.</p></li>
+          </Reveal>
           <Link className="more" to="/how-it-works">See every step →</Link>
         </div>
       </section>
 
       <section className="band">
         <div className="wrap split2 center">
-          <div className="head">
+          <Reveal className="head">
+            <span className="eyebrow">The fun part</span>
+            <h2>Your first letters <span className="dim">are already on their way.</span></h2>
+            <p className="sub">It's the same Gmail you know, on your phone and your laptop. Only now, every email you send carries your own name.</p>
+          </Reveal>
+          <InboxDemo />
+        </div>
+      </section>
+
+      <section className="brand-band">
+        <div className="wrap">
+          <Reveal as="p" className="bb-line">Your name.<br />Your domain.<br /><span>Your inbox.</span></Reveal>
+          <Reveal as="p" className="bb-sub">Registered to you, not to us. Leave whenever you like and take it all with you.</Reveal>
+        </div>
+      </section>
+
+      <section className="band">
+        <div className="wrap split2 center">
+          <Reveal className="head">
             <span className="eyebrow">Pricing</span>
             <h2>One honest price. <span className="dim">Every line up front.</span></h2>
             <p className="sub">Cancel any time. The domain and the mailbox stay yours.</p>
-          </div>
+          </Reveal>
           <div className="panel receipt">
             <div className="line"><div><b>Posty</b><span>Finding, buying and setting up your address. Renewals, support and a person to ask.</span></div><b>${POSTY_MONTHLY} / month</b></div>
             <div className="line"><div><b>Google Workspace</b><span>Gmail on your own domain, billed by Google straight to your own account.</span></div><b>from ${WORKSPACE_FROM} / month</b></div>

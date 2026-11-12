@@ -1,5 +1,31 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from './store';
+import { X } from '@phosphor-icons/react/dist/csr/X';
+import { SmileyWink } from '@phosphor-icons/react/dist/csr/SmileyWink';
+import { ArrowRight } from '@phosphor-icons/react/dist/csr/ArrowRight';
+import { At } from '@phosphor-icons/react/dist/csr/At';
+import { BookmarkSimple } from '@phosphor-icons/react/dist/csr/BookmarkSimple';
+import { ChatCircle } from '@phosphor-icons/react/dist/csr/ChatCircle';
+import { Check } from '@phosphor-icons/react/dist/csr/Check';
+import { CheckCircle } from '@phosphor-icons/react/dist/csr/CheckCircle';
+import { Circle } from '@phosphor-icons/react/dist/csr/Circle';
+import { ClockCounterClockwise } from '@phosphor-icons/react/dist/csr/ClockCounterClockwise';
+import { CreditCard } from '@phosphor-icons/react/dist/csr/CreditCard';
+import { DeviceMobile } from '@phosphor-icons/react/dist/csr/DeviceMobile';
+import { EnvelopeSimple } from '@phosphor-icons/react/dist/csr/EnvelopeSimple';
+import { GlobeSimple } from '@phosphor-icons/react/dist/csr/GlobeSimple';
+import { Heart as PHeart } from '@phosphor-icons/react/dist/csr/Heart';
+import { House } from '@phosphor-icons/react/dist/csr/House';
+import { Laptop } from '@phosphor-icons/react/dist/csr/Laptop';
+import { LockSimple } from '@phosphor-icons/react/dist/csr/LockSimple';
+import { MagnifyingGlass } from '@phosphor-icons/react/dist/csr/MagnifyingGlass';
+import { Minus } from '@phosphor-icons/react/dist/csr/Minus';
+import { Plus } from '@phosphor-icons/react/dist/csr/Plus';
+import { Question } from '@phosphor-icons/react/dist/csr/Question';
+import { ShieldCheck } from '@phosphor-icons/react/dist/csr/ShieldCheck';
+import { TrayArrowDown } from '@phosphor-icons/react/dist/csr/TrayArrowDown';
+import { User } from '@phosphor-icons/react/dist/csr/User';
+import { UsersThree } from '@phosphor-icons/react/dist/csr/UsersThree';
 
 export const POSTY_MONTHLY = 5;
 export const WORKSPACE_FROM = 7;
@@ -49,17 +75,22 @@ export function useMeta(title, description, path, noindex = false) {
 
 /* ---------- brand bits ---------- */
 
-export function Logo({ size = 28 }) {
+// Posty mark (final, Nov 12): blue speech-bubble P on a light tile, no dot.
+// Source: project brand/final/posty-mark.svg (100x100).
+const BUBBLE_P = 'M18.5 25A8.5 8.5 0 0 1 27 16.5H61.5A24 23.6 0 0 1 61.5 63.7H41.6Q39.6 63.7 38.1 65.1L23.4 79.6Q21.3 81.6 19.8 80.5Q18.5 79.6 18.5 77.6Z';
+export function Logo({ size = 26 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 100 100" aria-hidden="true" className="logo-mark">
       <defs>
-        <linearGradient id="plg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#7FB0F7" /><stop offset="1" stopColor="#3F7FE6" />
-        </linearGradient>
+        <linearGradient id="pm-tile" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#F7FAFF" /><stop offset="1" stopColor="#E4EEFD" /></linearGradient>
+        <linearGradient id="pm-rim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FFFFFF" /><stop offset="1" stopColor="#C9DCF8" /></linearGradient>
+        <linearGradient id="pm-p" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#4C9DFB" /><stop offset="1" stopColor="#3383F0" /></linearGradient>
+        <linearGradient id="pm-hi" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FFFFFF" stopOpacity=".45" /><stop offset=".18" stopColor="#FFFFFF" stopOpacity="0" /></linearGradient>
+        <filter id="pm-sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.6" stdDeviation="1.6" floodColor="#1F5FC4" floodOpacity=".28" /></filter>
       </defs>
-      <path d="M16 3c7.7 0 13 5 13 11.6S23.7 26 16 26c-1.6 0-3.1-.2-4.5-.6L5 29l1.6-6C4.3 20.9 3 18 3 14.6 3 8 8.3 3 16 3z" fill="url(#plg)" />
-      <path d="M10 11.5l6 4.5 6-4.5" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="25.5" cy="6.5" r="3.6" fill="#D4553A" stroke="#fff" strokeWidth="1.6" />
+      <rect x="1" y="1" width="98" height="98" rx="22" fill="url(#pm-tile)" stroke="url(#pm-rim)" strokeWidth="1.5" />
+      <path d={BUBBLE_P} fill="url(#pm-p)" filter="url(#pm-sh)" />
+      <path d={BUBBLE_P} fill="url(#pm-hi)" stroke="#2A74DF" strokeOpacity=".55" strokeWidth=".9" />
     </svg>
   );
 }
@@ -68,29 +99,18 @@ export function Address({ local, domain }) {
   return <span className="addr">{local}@{domain}</span>;
 }
 
+// Icons: Phosphor (MIT licence), weight "regular", as drawn in the Paper frames.
 const ICONS = {
-  search: <><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4 4" /></>,
-  history: <><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8.5" /><path d="M4 4v4.5h4.5" /><path d="M12 8v4l3 2" /></>,
-  check: <path d="M5 12.5l4.5 4.5L19 7.5" />,
-  mail: <><rect x="3.5" y="5.5" width="17" height="13" rx="2.5" /><path d="M4 7l8 6 8-6" /></>,
-  chat: <path d="M12 4.5c4.7 0 8 2.9 8 6.6s-3.3 6.6-8 6.6c-.9 0-1.8-.1-2.6-.3L5 19.5l1.1-3.4C4.8 14.9 4 13.1 4 11.1 4 7.4 7.3 4.5 12 4.5z" />,
-  shield: <><path d="M12 3.5l7 2.5v5.5c0 4.3-3 7.6-7 9-4-1.4-7-4.7-7-9V6l7-2.5z" /><path d="M9 12l2.2 2.2L15.5 10" /></>,
-  globe: <><circle cx="12" cy="12" r="8.5" /><path d="M3.5 12h17M12 3.5c2.4 2.4 3.5 5.3 3.5 8.5s-1.1 6.1-3.5 8.5c-2.4-2.4-3.5-5.3-3.5-8.5s1.1-6.1 3.5-8.5z" /></>,
-  card: <><rect x="3.5" y="6" width="17" height="12" rx="2.5" /><path d="M3.5 10h17M7 14.5h3" /></>,
-  phone: <><rect x="7" y="3.5" width="10" height="17" rx="2.5" /><path d="M11 17.5h2" /></>,
-  import: <><path d="M4 12h11M11 8l4 4-4 4" /><path d="M19 5v14" /></>,
-  people: <><circle cx="9" cy="9" r="3" /><path d="M3.5 19c.6-3 2.8-5 5.5-5s4.9 2 5.5 5" /><path d="M17 8v6M14 11h6" /></>,
-  lock: <><rect x="5" y="10.5" width="14" height="10" rx="2.5" /><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" /></>,
-  arrow: <path d="M5 12h13M13 7l5 5-5 5" />,
-  heart: <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" />
+  search: MagnifyingGlass, history: ClockCounterClockwise, check: Check, checkCircle: CheckCircle,
+  mail: EnvelopeSimple, chat: ChatCircle, shield: ShieldCheck, globe: GlobeSimple, card: CreditCard,
+  phone: DeviceMobile, laptop: Laptop, import: TrayArrowDown, user: User, people: UsersThree,
+  lock: LockSimple, arrow: ArrowRight, heart: PHeart, bookmark: BookmarkSimple, at: At,
+  home: House, help: Question, plus: Plus, minus: Minus, x: X
 };
 
-export function Icon({ name, size = 18, className }) {
-  return (
-    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      {ICONS[name]}
-    </svg>
-  );
+export function Icon({ name, size = 18, className, weight = 'regular' }) {
+  const C = ICONS[name] || Circle;
+  return <C className={className} size={size} weight={name === 'check' ? 'bold' : weight} aria-hidden="true" focusable="false" />;
 }
 
 export function Heart({ on }) {
@@ -170,13 +190,36 @@ export function Nav({ path }) {
   );
 }
 
+// Closing headline joke (Andreas, Nov 12): the provider cycles through old-school
+// addresses and lands on "boomermail.com" with a small wink. Static for reduced motion.
+const OLD_MAIL = ['hotmail.com', 'yahoo.com', 'msn.com', 'live.com', 'boomermail.com'];
+function OldMail() {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
+    const last = i === OLD_MAIL.length - 1;
+    const t = setTimeout(() => setI((i + 1) % OLD_MAIL.length), last ? 4200 : i === 0 ? 2600 : 1500);
+    return () => clearTimeout(t);
+  }, [i]);
+  const word = OLD_MAIL[i];
+  const boomer = word === 'boomermail.com';
+  return (
+    <span className={'oldmail' + (boomer ? ' is-boomer' : '')}>
+      <span key={word} className="om-word">
+        {boomer ? <><span className="om-boomer">boomer</span>mail.com</> : word}?
+      </span>
+      {boomer && <SmileyWink className="om-wink" size="0.8em" weight="duotone" aria-hidden="true" />}
+    </span>
+  );
+}
+
 export function Closing() {
   const [name, setName] = useState('');
   return (
     <section className="band">
       <div className="wrap">
         <div className="closing-line">
-          <h2>Still on @hotmail.com? <span className="dim">Get an address that is actually yours.</span></h2>
+          <h2 aria-label="Still on @hotmail.com? Get an address that is actually yours."><span className="om-line" aria-hidden="true">Still on @<OldMail /></span> <span className="dim" aria-hidden="true">Get an address that is actually yours.</span></h2>
           <SearchBox id="pl-q2" value={name} onChange={setName} onSubmit={v => navigate(v.trim() ? '/?q=' + encodeURIComponent(v.trim()) : '/#search')} />
         </div>
       </div>
@@ -188,7 +231,7 @@ export function Footer() {
   return (
     <footer>
       <div className="wrap foot-row">
-        <Link className="logo" to="/" aria-label="Posty home"><Logo size={24} />Posty</Link>
+        <Link className="logo" to="/" aria-label="Posty home"><Logo />Posty</Link>
         <nav aria-label="Footer">
           <Link to="/how-it-works">How it works</Link>
           <Link to="/pricing">Pricing</Link>

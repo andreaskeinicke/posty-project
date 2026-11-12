@@ -1,200 +1,199 @@
-import React, { useMemo, useState } from 'react';
-import { money, TLD_PRICE } from './names';
-import { useStore, clearRecent } from './store';
-import { ResultRow } from './Landing';
-import { Address, AGENT_PROMPT, Closing, CopyButton, HELLO, Icon, Link, PageHead, useMeta, POSTY_MONTHLY, WORKSPACE_FROM, SITE } from './ui';
+import React, { useEffect, useMemo, useState } from 'react';
+import { money } from './names';
+import { useStore, clearRecent, toggleSaved } from './store';
+import { Address, AGENT_PROMPT, Closing, CopyButton, getUrl, HELLO, Heart, Icon, Link, PageHead, useMeta, POSTY_MONTHLY, WORKSPACE_FROM, SITE } from './ui';
 
-function AgentPanel() {
+/* ---------- How it works (Paper "Site v5 · pages") ---------- */
+
+// Shared page opening: two-tone headline, one plain line under it.
+function Head({ title, sub, children, className = '' }) {
   return (
-    <section className="band tight">
+    <section className={'v5-head ' + className}>
       <div className="wrap">
-        <div className="dark-panel">
-          <div>
-            <span className="eyebrow">For AI assistants</span>
-            <h2>Ask your assistant to find you <span className="dim">an address.</span></h2>
-            <p>Posty publishes a plain description of what it does and how to search, so assistants can look up addresses for you and hand you a link to finish. <Link to="/agents">How it works for assistants →</Link></p>
-          </div>
-          <div className="prompt">
-            <div className="prompt-top"><span className="mono">Prompt</span><CopyButton className="link-btn light" text={AGENT_PROMPT} label="Copy" /></div>
-            <p className="mono">Use posty.club to find a personal email address for Anna Keinicke. Show me three complete options with prices.</p>
-          </div>
-        </div>
+        <h1>{title}</h1>
+        {sub && <p className="lede">{sub}</p>}
+        {children}
       </div>
     </section>
   );
 }
 
-/* ---------- How it works ---------- */
+// Photo frame. Shows a calm placeholder until a licensed photo is set via --photo.
+export function Photo({ className = '', children }) {
+  return <div className={'v5-photo ' + className} aria-hidden="true">{children}</div>;
+}
+
+export function Tile({ name }) {
+  return <span className="v5-tile"><Icon name={name} size={20} /></span>;
+}
 
 export function HowItWorks() {
-  useMeta('How Posty works · Three steps, we take the hard one', 'Search your name, pick an address and pay once. Posty registers the domain in your name, connects Google Workspace and sets up MX, SPF, DKIM and DMARC. You approve Google once.', '/how-it-works');
-  const usual = [
-    ['Find an address that is free', 'Guess and check', 'One search'],
-    ['Buy the domain', 'Separate registrar', 'Included, in your name'],
-    ['Set up the mailbox', 'Separate signup', 'Google Workspace, linked'],
-    ['MX, SPF, DKIM, DMARC', 'Copy by hand', 'Done for you'],
-    ['Renewals and record checks', 'Your job', 'We watch them']
+  useMeta('How Posty works · From search to sent', 'Search your name and pick an address. Posty registers the domain in your name, creates your Google Workspace inbox and sets MX, SPF, DKIM and DMARC. Then you sign in to Gmail.', '/how-it-works');
+  const setup = [
+    ['globe', <><b>ostrand.com</b> registered to Mila Ostrand</>],
+    ['mail', 'Google Workspace inbox created'],
+    ['shield', 'MX, SPF, DKIM and DMARC set']
+  ];
+  const devices = [
+    ['phone', 'On your phone', 'The Gmail app, signed in as you.'],
+    ['laptop', 'On your laptop', 'gmail.com, same as always.'],
+    ['import', 'Old mail', 'Bring it over when you want.']
   ];
   return (
     <>
-      <section className="page-head left">
-        <div className="glow" aria-hidden="true" />
-        <div className="wrap hiw-hero">
-          <div className="hero-in">
-            <span className="eyebrow">How it works</span>
-            <h1>Three steps. <span className="dim">We take the hard one.</span></h1>
-            <p className="lede">Most email providers hand you a list of DNS records and wish you luck. Posty finds the address, buys the domain in your name, and connects everything. You choose, and approve once with Google.</p>
-            <div className="cta-row left">
-              <Link className="btn btn-ink" to="/#search">Find your email</Link>
-              <Link className="btn btn-line" to="/pricing">See pricing</Link>
+      <Head title={<>From search to sent. <span className="dim">You pick the address. We do the rest.</span></>} sub="Here is what happens between your search and your first email." />
+      <section className="v5-steps wrap">
+        <article className="v5-step">
+          <div className="v5-step-t"><span className="n">01</span><h2>Find an address you like</h2><p>Type your name. We only show addresses that are free right now, with the price next to each.</p></div>
+          <Photo className="hiw">
+            <div className="v5-glass small">
+              <div className="hv-row on"><span className="hv-addr">mila<span>@</span>ostrand.com</span><span className="hv-btn blue">Get this email</span></div>
+              <div className="hv-row"><span className="hv-addr">hi<span>@</span>milaostrand.com</span></div>
             </div>
-          </div>
-          <div className="hiw-art" aria-hidden="true">
-            <div className="art-card a1"><Icon name="search" size={16} /><span>anna keinicke</span></div>
-            <div className="art-card a2"><span className="addr">anna@keinicke.com</span><span className="ok-t">Available</span></div>
-            <div className="art-card a3"><span className="mono">MX</span><span className="mono">SPF</span><span className="mono">DKIM</span><span className="mono">DMARC</span></div>
-            <div className="art-card a4"><Icon name="mail" size={16} /><span><b>Posty</b> · Your first letter arrived</span></div>
-          </div>
-        </div>
+          </Photo>
+        </article>
+        <article className="v5-step">
+          <div className="v5-step-t"><span className="n">02</span><h2>We set everything up</h2><p>We register the domain in your name, create your Google Workspace inbox and set the mail records.</p><Link className="v5-more" to="/pricing#behind">See everything we set up <Icon name="arrow" size={14} /></Link></div>
+          <ul className="v5-list">
+            {setup.map(([ic, t], i) => <li key={i}><Tile name={ic} /><span>{t}</span><Icon name="check" size={16} className="ok" /></li>)}
+          </ul>
+        </article>
+        <article className="v5-step">
+          <div className="v5-step-t"><span className="n">03</span><h2>You start sending</h2><p>Sign in to Gmail on your phone and laptop. We help bring your old mail along.</p></div>
+          <ul className="v5-cards">
+            {devices.map(([ic, h, p]) => <li key={h}><Tile name={ic} /><h3>{h}</h3><p>{p}</p></li>)}
+          </ul>
+        </article>
       </section>
-
-      <section className="band tight">
-        <div className="wrap three">
-          <article className="panel how-card">
-            <div className="hc-top"><span className="num">1</span><span className="who">You</span></div>
-            <div className="mini-ui">
-              <div className="mu-input">Anna Keinicke</div>
-              <div className="mu-row"><b>anna@keinicke.com</b><span>Available</span></div>
-              <div className="mu-row"><b>hi@annak.dk</b><span>Available</span></div>
-            </div>
-            <h3>Search for your name</h3>
-            <p>Type your name, family or business. We check real availability across domains and show complete addresses, not just domains.</p>
-          </article>
-          <article className="panel how-card">
-            <div className="hc-top"><span className="num">2</span><span className="who">You</span></div>
-            <div className="mini-ui">
-              <div className="mu-row plain"><span>Domain, first year</span><b>$12</b></div>
-              <div className="mu-row plain"><span>Posty, monthly</span><b>${POSTY_MONTHLY}</b></div>
-              <div className="mu-row plain"><span>Workspace, by Google</span><b>from ${WORKSPACE_FROM}</b></div>
-            </div>
-            <h3>Pick it and pay once</h3>
-            <p>One receipt with every line: the domain at cost, Posty at $5 a month, and Google Workspace billed by Google.</p>
-          </article>
-          <article className="panel how-card">
-            <div className="hc-top"><span className="num">3</span><span className="who us">Posty</span></div>
-            <div className="mini-ui chips">
-              {['Domain in your name', 'Workspace linked', 'MX', 'SPF', 'DKIM', 'DMARC', 'First letter sent'].map(c => <span key={c} className="rec mono"><Icon name="check" size={12} />{c}</span>)}
-            </div>
-            <h3>We move you in</h3>
-            <p>We register the domain in your name, connect Workspace and set up the mail records. You approve Google once.</p>
-          </article>
-        </div>
-      </section>
-
-      <section className="band">
-        <div className="wrap split2">
-          <div className="head">
-            <span className="eyebrow">The usual way vs Posty</span>
-            <h2>No DNS <span className="dim">homework.</span></h2>
-            <p className="sub">Setting up email on your own domain normally means buying a domain in one place, mail in another, then copying records between them. Small mistakes there are why mail goes missing.</p>
-          </div>
-          <div className="panel vs">
-            <table>
-              <thead><tr><th scope="col"><span className="sr">Task</span></th><th scope="col">Usually</th><th scope="col" className="hi">With Posty</th></tr></thead>
-              <tbody>{usual.map(([a, b, c]) => <tr key={a}><th scope="row">{a}</th><td>{b}</td><td className="hi">{c}</td></tr>)}</tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <AgentPanel />
       <Closing />
     </>
+  );
+}
+
+/* ---------- Behind the button: the technical work Posty does, named plainly ---------- */
+
+// Mirrors backend/fulfilment (Cloudflare registrar + DNS, workspaceBackend.records). Keep in sync.
+const BEHIND = [
+  ['Your domain', 'globe', [
+    ['Live availability check', 'We query the domain registries (RDAP) for every ending and only show addresses you can actually buy.', null],
+    ['Registration in your name', 'You are the registrant on record, with your contact details kept private in WHOIS.', 'Registrant: Mila Ostrand'],
+    ['DNS zone', 'We host the domain\'s DNS, so every record below can be set and checked without you.', 'NS  *.ns.cloudflare.com']
+  ]],
+  ['Google Workspace', 'mail', [
+    ['Sign in with Google', 'The one step that is yours: accept Google\'s terms, so the mailbox and the bill are in your own name.', null, true],
+    ['Domain verification', 'Proves to Google that you own the domain.', 'TXT  google-site-verification=…']
+  ]],
+  ['Mail that arrives', 'shield', [
+    ['MX record', 'Tells the world\'s mail servers to deliver your mail to Gmail.', 'MX  1 smtp.google.com'],
+    ['SPF', 'Lists who may send as you, so your mail is not marked as spam.', 'TXT  v=spf1 include:_spf.google.com ~all'],
+    ['DKIM', 'A signing key that proves each email really came from you.', 'TXT  google._domainkey  v=DKIM1; k=rsa; p=…'],
+    ['DMARC', 'Tells Gmail and Outlook what to do with mail that pretends to be you.', 'TXT  _dmarc  v=DMARC1; p=none']
+  ]],
+  ['After moving in', 'checkCircle', [
+    ['Checked in public DNS', 'We look your records up from the outside, the way other mail servers will, before we call it done.', null],
+    ['Renewal every year', 'We renew the domain at cost, so your address never lapses by accident.', null],
+    ['Someone to ask', 'If mail stops arriving or a record drifts, you write to us and we fix it.', null]
+  ]]
+];
+
+export function BehindTheButton() {
+  return (
+    <section className="band v5-rule v5-behind" id="behind">
+      <div className="wrap">
+        <h2>Finding the address is the easy part. <span className="dim">Here is everything behind the button.</span></h2>
+        <ul className="v5-facts">
+          <li><b>3</b><span>accounts to set up and connect: registrar, Google, DNS</span></li>
+          <li><b>5</b><span>DNS records, each copied exactly, character by character</span></li>
+          <li><b>1</b><span>typo is enough to send your mail to spam, or nowhere</span></li>
+        </ul>
+        <div className="v5-bt">
+          {BEHIND.map(([group, ic, rows]) => (
+            <div key={group} className="bt-group">
+              <div className="bt-h"><Tile name={ic} /><h3>{group}</h3></div>
+              <ul>
+                {rows.map(([t, p, rec, you]) => (
+                  <li key={t} className={you ? 'you' : ''}>
+                    <div className="bt-t"><b>{t}</b><span>{p}</span></div>
+                    {rec ? <code className="bt-rec">{rec}</code> : <span className="bt-rec none" />}
+                    <span className={'bt-who' + (you ? ' you' : '')}>{you ? 'You, once' : <><Icon name="check" size={14} />Posty</>}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+        <p className="v5-bt-foot">On your own, that is a registrar, the Google Admin console and a DNS dashboard, with values copied between them by hand. With Posty, it is one button and one Google sign-in.</p>
+      </div>
+    </section>
+  );
+}
+
+const VS = [
+  ['Your own domain', true],
+  ['Gmail by Google Workspace', true],
+  ['Finds free addresses for your name', false],
+  ['Domain, mailbox and DNS in one place, not three dashboards', false],
+  ['Google domain verification done for you', false],
+  ['MX records pointed at Gmail', false],
+  ['SPF, DKIM and DMARC set, so your mail is not spam', false],
+  ['Every record checked from the outside before you start', false],
+  ['Renewal watched, so your address never lapses', false],
+  ['Someone to ask when it breaks', false]
+];
+
+function DoItYourself() {
+  return (
+    <section className="band v5-rule v5-diy">
+      <div className="wrap">
+        <h2>Why not do it yourself? <span className="dim">You can. Here is what Posty saves you.</span></h2>
+        <div className="v5-vs">
+          <div>
+            <h3>On your own</h3>
+            <p>Registrar, Google Workspace and DNS, set up by you.</p>
+            <ul>{VS.map(([t, ok]) => <li key={t} className={ok ? '' : 'no'}><Icon name={ok ? 'check' : 'x'} size={14} />{t}{!ok && <span className="sr"> (not included)</span>}</li>)}</ul>
+          </div>
+          <div>
+            <h3>With Posty</h3>
+            <p>One search, one button. We set it up and look after it.</p>
+            <ul>{VS.map(([t]) => <li key={t}><Icon name="check" size={14} />{t}</li>)}</ul>
+          </div>
+        </div>
+        <Link className="v5-more" to="#behind" onClick={e => { e.preventDefault(); const el = document.getElementById('behind'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }}>See every technical step <Icon name="arrow" size={14} /></Link>
+      </div>
+    </section>
   );
 }
 
 /* ---------- Pricing ---------- */
 
 export function Pricing() {
-  useMeta('Posty pricing · $5 a month, every other line at cost', 'Posty is $5 a month. Google Workspace Business Starter is from $7 a month, billed by Google. Your domain is charged at cost, about $12 a year for a .com. About $13 a month in total.', '/pricing');
-  const tlds = ['.com', '.me', '.dev', '.family', '.email', '.club'];
-  const [tld, setTld] = useState('.com');
-  const domainYear = tld === '.com' ? 12 : TLD_PRICE[tld];
-  const domainMonthly = domainYear / 12;
-  const total = POSTY_MONTHLY + WORKSPACE_FROM + domainMonthly;
-  const who = [
-    ['t-sky', 'Just you', 'anna@keinicke.com', 'A personal address that outlives any job, school or provider.'],
-    ['t-peach', 'A household', 'Room for the whole family', 'Add people on the same domain. Each extra person is another Workspace seat, billed by Google.'],
-    ['t-mint', 'A small business', 'hello@yourbakery.dk', 'Look established from the first invoice, without an IT person.']
+  useMeta('Posty pricing · One honest price', 'Posty is $5 a month. Google Workspace Business Starter is from $7 a month, billed by Google. Your domain is charged at cost, about $12 a year for a .com. About $13 a month in total.', '/pricing');
+  const lines = [
+    ['Posty', 'Finding, buying and setting up your address. Renewals and help.', `$${POSTY_MONTHLY} / month`],
+    ['Google Workspace', 'Gmail on your own domain, billed by Google to your own account.', `from $${WORKSPACE_FROM} / month`],
+    ['Your domain', 'Registered in your name at cost. A .com is about $12 a year.', 'at cost']
   ];
   return (
     <>
-      <PageHead kicker="Pricing" title={<>One price for Posty. <span className="dim">Every other line, at cost.</span></>} sub="You see the whole receipt before you pay. No bundles, no first-year tricks, and the domain is registered in your name from day one." />
-      <section className="band tight">
-        <div className="wrap price-grid">
-          <div className="panel plan">
-            <div className="plan-top"><span className="logo"><Logo24 />Posty</span><span className="badge soft">One plan</span></div>
-            <div className="amt">${POSTY_MONTHLY}<small> / month for Posty</small></div>
-            <ul className="checks">
-              <li>We find and register your domain, in your name</li>
-              <li>We connect Google Workspace and every mail record</li>
-              <li>We watch renewals and records, and fix what drifts</li>
-              <li>Help from us when you need it</li>
-              <li>Cancel any time. The domain stays yours</li>
-            </ul>
-            <Link className="btn btn-ink wide" to="/#search">Find your email</Link>
+      <section className="v5-head split">
+        <div className="wrap v5-split">
+          <div>
+            <h1>One honest price. <span className="dim">Every line up front.</span></h1>
+            <p className="lede">Cancel any time. The domain and the mailbox stay yours.</p>
           </div>
-          <div className="panel receipt warm">
-            <span className="eyebrow mono">What you actually pay</span>
-            <h2 className="h3">For one person on a <span className="tld-pick">{tld}</span></h2>
-            <div className="tlds" role="group" aria-label="Domain ending">
-              {tlds.map(t => <button key={t} type="button" className="tld" aria-pressed={t === tld} onClick={() => setTld(t)}>{t}</button>)}
+          <div className="v5-receipt">
+            {lines.map(([h, p, a]) => <div key={h} className="line"><div><b>{h}</b><span>{p}</span></div><b>{a}</b></div>)}
+            <div className="tot">
+              <div><span>All in, for most people</span><p><b>about $13</b> / month</p></div>
+              <Link className="btn btn-ink" to="/#search">Find your email</Link>
             </div>
-            <div className="line"><div><b>Posty</b><span>Setup, renewals, record checks, help.</span></div><b>{money(POSTY_MONTHLY)} / mo</b></div>
-            <div className="line"><div><b>Google Workspace</b><span>Billed by Google. Business Starter, from.</span></div><b>{money(WORKSPACE_FROM)} / mo</b></div>
-            <div className="line"><div><b>Your domain</b><span>At cost, about {money(domainYear)} a year for a {tld}.</span></div><b>≈ {money(domainMonthly)} / mo</b></div>
-            <div className="total"><span>About</span><p className="big-num">{money(Math.round(total))}<small> / month</small></p></div>
-            <p className="fine">Domain prices vary by ending. You see the exact number next to every address in search. Google's price can differ by country and plan. VAT is added at checkout where it applies.</p>
           </div>
         </div>
       </section>
-      <section className="band">
-        <div className="wrap">
-          <h2>Same price, <span className="dim">whoever you are.</span></h2>
-          <div className="three" style={{ marginTop: 28 }}>
-            {who.map(([t, k, a, d]) => (
-              <article key={k} className="panel who-card">
-                <div className={'who-art ' + t} aria-hidden="true"><Logo24 /></div>
-                <div className="who-in"><span className="eyebrow mono">{k}</span><b>{a}</b><p>{d}</p></div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-      <section className="band tight">
-        <div className="wrap split2">
-          <div className="head">
-            <span className="eyebrow">Pricing questions</span>
-            <h2>Fair <span className="dim">questions.</span></h2>
-            <Link className="more" to="/questions">All questions →</Link>
-          </div>
-          <div className="faq">
-            {FAQ.find(g => g[0] === 'Billing')[3].slice(0, 3).map(([q, a]) => <details key={q} open><summary>{q}</summary><p>{a}</p></details>)}
-          </div>
-        </div>
-      </section>
+      <DoItYourself />
+      <BehindTheButton />
       <Closing />
     </>
-  );
-}
-
-function Logo24() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true">
-      <path d="M16 3c7.7 0 13 5 13 11.6S23.7 26 16 26c-1.6 0-3.1-.2-4.5-.6L5 29l1.6-6C4.3 20.9 3 18 3 14.6 3 8 8.3 3 16 3z" fill="#3F7FE6" />
-      <path d="M10 11.5l6 4.5 6-4.5" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="25.5" cy="6.5" r="3.6" fill="#D4553A" stroke="#fff" strokeWidth="1.6" />
-    </svg>
   );
 }
 
@@ -202,7 +201,7 @@ function Logo24() {
 
 const EXAMPLES = [
   ['Personal brand', 'Your name, nothing else', [['maya', 'lindqvist.me', 'Maya Lindqvist'], ['jonas', 'jonasbager.com', 'Jonas Bager'], ['hi', 'leanguyen.me', 'Lea Nguyen']]],
-  ['Professional', 'Looks right in a recruiter\'s inbox', [['a.holm', 'aholm.dev', 'Anna Holm'], ['mkaur', 'mkaur.com', 'Mina Kaur'], ['peter', 'petersen.page', 'Peter Petersen']]],
+  ['Professional', 'Looks right in a recruiter\'s inbox', [['a.holm', 'aholm.dev', 'Ane Holm'], ['mkaur', 'mkaur.com', 'Mina Kaur'], ['peter', 'petersen.page', 'Peter Petersen']]],
   ['Short', 'Two letters to type at every checkout', [['tk', 'tkmail.com', 'Tobias Krogh'], ['me', 'ines.email', 'Ines'], ['jo', 'jdm.me', 'Jo D. Mason']]],
   ['Family', 'One domain, an address for everyone at home', [['sofie', 'theokafors.family', 'Sofie Okafor'], ['dad', 'theholms.com', 'Erik Holm'], ['kids', 'teamlarsen.family', 'Mette Larsen']]],
   ['Playful', 'For newsletters, side projects and fun', [['hello', 'nikoh.club', 'Niko Haddad'], ['hey', 'itsclara.com', 'Clara'], ['post', 'olivermail.com', 'Oliver Moe']]],
@@ -268,63 +267,69 @@ export const FAQ = [
   ]]
 ];
 
-const TOPICS = ['Cancel', 'Old mail', 'Workspace', 'Family', 'Change address'];
+// The questions people ask first, in the order they ask them.
+const TOP = [
+  ['Do I keep using Gmail?', 'Yes. Your new address runs on Gmail by Google Workspace, so you use the Gmail app and gmail.com as before, signed in as your new address.'],
+  ['Who owns the domain?', 'You do. It is registered in your name, and you can move it to another provider whenever you like. Posty looks after it while you are a customer.'],
+  ['What happens to my old Hotmail address?', 'Nothing. It keeps working. Tell people your new address at your own pace, and bring your old mail and contacts over with Google\'s import tool when you want.'],
+  ['Can my family get addresses too?', 'Yes. Add people on the same domain. Each extra person is another Google Workspace seat, billed by Google.'],
+  ['What does it cost in total?', '$5 a month to Posty, Google Workspace from $7 a month paid to Google, and the domain at cost, about $12 a year for a .com. About $13 a month for most people.'],
+  ['Can I cancel?', 'Any time. The domain and the Workspace account stay yours. You can keep them running yourself or move them anywhere.'],
+  ['Do I need to know anything technical?', 'No. We register the domain, create the inbox and set the mail records. You sign in to Gmail once.']
+];
+
+function Accordion({ items, openFirst }) {
+  const [open, setOpen] = useState(openFirst ? 0 : -1);
+  return (
+    <div className="v5-acc">
+      {items.map(([q, a], i) => {
+        const on = open === i;
+        const id = 'qa-' + i;
+        return (
+          <div key={q} className={'qa' + (on ? ' on' : '')}>
+            <h3><button type="button" aria-expanded={on} aria-controls={id} onClick={() => setOpen(on ? -1 : i)}>{q}<Icon name={on ? 'minus' : 'plus'} size={18} /></button></h3>
+            <div id={id} role="region" hidden={!on}><p>{a}</p></div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export function Questions() {
-  useMeta('Questions · Ask Posty anything', 'Answers about Posty: owning your domain, Google Workspace, bringing old mail, family addresses, privacy, pricing and cancelling.', '/questions');
-  const [q, setQ] = useState(() => (new URLSearchParams(window.location.search).get('q') || '').slice(0, 60));
-  const [group, setGroup] = useState('');
-  const items = useMemo(() => {
-    const words = q.toLowerCase().split(/\s+/).filter(Boolean);
-    return FAQ.filter(g => !group || g[0] === group)
-      .flatMap(g => g[3].map(([qq, a]) => ({ g: g[0], q: qq, a })))
-      .filter(x => words.every(w => (x.q + ' ' + x.a).toLowerCase().includes(w)));
-  }, [q, group]);
-  const filtered = q || group;
+  useMeta('Questions · Posty, answered plainly', 'Answers about Posty: Gmail, owning your domain, your old Hotmail address, family addresses, the total price, cancelling and what you need to know.', '/questions');
+  const q = (new URLSearchParams(window.location.search).get('q') || '').slice(0, 60);
+  const all = useMemo(() => {
+    const seen = new Set(TOP.map(x => x[0]));
+    return [...TOP, ...FAQ.flatMap(g => g[3]).filter(x => !seen.has(x[0]))];
+  }, []);
+  const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+  const hits = words.length ? all.filter(([qq, a]) => words.every(w => (qq + ' ' + a).toLowerCase().includes(w))) : [];
   return (
     <>
-      <PageHead kicker="Questions & help" title={<>Ask us <span className="dim">anything.</span></>}>
-        <form className="finder" role="search" onSubmit={e => e.preventDefault()}>
-          <label className="sr" htmlFor="pl-faq">Search questions</label>
-          <Icon name="search" size={20} className="finder-ic" />
-          <input id="pl-faq" value={q} maxLength={60} placeholder="Search questions, like “do I own the domain”" onChange={e => setQ(e.target.value)} />
-          {q && <button type="button" className="btn btn-line" onClick={() => setQ('')}>Clear</button>}
-        </form>
-        <div className="recent">
-          {TOPICS.map(t => <button key={t} type="button" className="chip" aria-pressed={q.toLowerCase() === t.toLowerCase()} onClick={() => { setQ(t.toLowerCase() === q.toLowerCase() ? '' : t); setGroup(''); }}>{t}</button>)}
-        </div>
-      </PageHead>
-      <section className="band tight">
-        <div className="wrap">
-          <div className="cards4">
-            {FAQ.map(([g, ic, sub]) => (
-              <button key={g} type="button" className={'panel side-card topic' + (group === g ? ' on' : '')} aria-pressed={group === g} onClick={() => setGroup(group === g ? '' : g)}>
-                <span className="ic"><Icon name={ic} /></span><h3>{g}</h3><p>{sub}</p>
-              </button>
-            ))}
-          </div>
-          <div className="q-grid">
-            <div>
-              <span className="eyebrow mono">{filtered ? `${items.length} ${items.length === 1 ? 'answer' : 'answers'}${group ? ' in ' + group : ''}` : 'Most asked'}</span>
-              <div className="faq boxed">
-                {items.map((x, i) => <details key={x.q} open={i < 2 && !filtered ? true : undefined}><summary>{x.q}</summary><p>{x.a}</p></details>)}
-                {!items.length && <p className="note">No answer matches that yet. Write to us and we'll add one.</p>}
-              </div>
+      <section className="v5-head split">
+        <div className="wrap v5-qgrid">
+          <div className="v5-qside">
+            <h1>Questions, <span className="dim">answered plainly.</span></h1>
+            <div className="v5-card">
+              <Tile name="chat" />
+              <h3>Still wondering?</h3>
+              <p>Send us a message and we walk you through it.</p>
+              <a className="btn btn-soft wide" href={'mailto:' + HELLO}>Send us a message</a>
             </div>
-            <aside className="q-side">
-              <div className="panel side-card stuck">
-                <span className="eyebrow mono">Still stuck?</span>
-                <h3>Write to us.</h3>
-                <p>Tell us what you were trying to do. We read every message and reply by email.</p>
-                <a className="btn btn-ink wide" href={'mailto:' + HELLO}>Send us a message</a>
+          </div>
+          <div>
+            {words.length > 0 && (
+              <div className="v5-qhits">
+                <p className="fine">{hits.length ? `${hits.length} ${hits.length === 1 ? 'answer' : 'answers'} about “${q}”` : `Nothing about “${q}” yet. Write to us and we'll add it.`} <Link to="/questions">Show all</Link></p>
+                {hits.length > 0 && <Accordion key={'h' + q} items={hits} openFirst />}
               </div>
-              <div className="dark-panel small">
-                <span className="eyebrow">For AI assistants</span>
-                <p>These answers are also published as plain text, so assistants can answer questions about Posty correctly.</p>
-                <a className="mono" href="/llms.txt">posty.club/llms.txt</a>
-              </div>
-              <p className="fine">Posty is run by Andreas Keinicke Holding ApS, Silkeborg, Denmark. <span className="mono">CVR 39464640</span></p>
-            </aside>
+            )}
+            {!words.length && <Accordion items={TOP} openFirst />}
+            {!words.length && FAQ.map(([g, , , items]) => {
+              const rest = items.filter(x => !TOP.some(t => t[0] === x[0]));
+              return rest.length ? <div key={g} className="v5-qgroup"><h2>{g}</h2><Accordion items={rest} /></div> : null;
+            })}
           </div>
         </div>
       </section>
@@ -428,40 +433,61 @@ export function Agents() {
 
 /* ---------- My searches: saved addresses and history ---------- */
 
-export function Saved() {
+export function Saved({ api }) {
   useMeta('My searches · Posty', 'Addresses you saved and names you searched on Posty, kept in this browser.', '/saved', true);
   const { saved, recent } = useStore();
+  const [live, setLive] = useState({});
+  const domains = saved.map(s => s.domain).join(',');
+  useEffect(() => {
+    if (!api || !domains) return undefined;
+    let gone = false;
+    api.checkDomains(domains.split(',')).then(r => { if (!gone) setLive(r || {}); }).catch(() => {});
+    return () => { gone = true; };
+  }, [api, domains]);
   return (
     <>
-      <PageHead left kicker="My searches" title={<>Your short list. <span className="dim">Saved in this browser.</span></>} sub="Addresses you saved and names you searched. They stay on this device and are never sent to us." />
-      <section className="band tight">
-        <div className="wrap saved-grid">
-          <div>
-            {saved.length === 0 ? (
-              <div className="empty panel">
-                <Icon name="heart" size={22} />
-                <p>No saved addresses yet. Tap the heart on any result to keep it here.</p>
-                <Link className="btn btn-ink" to="/#search">Find your email</Link>
-              </div>
-            ) : (
-              <div className="panel results-panel">
-                <div className="panel-head"><p><b>{saved.length} saved {saved.length === 1 ? 'address' : 'addresses'}</b></p></div>
-                <ul className="rows">{saved.map((s, i) => <ResultRow key={s.address} r={{ ...s, note: 'Saved ' + new Date(s.at || Date.now()).toLocaleDateString() + '. We check it is still free before you pay.' }} index={i + 1} saved={saved} />)}</ul>
-              </div>
-            )}
-          </div>
-          <aside className="history-panel" aria-label="Search history">
-            <div className="hp-head"><h2 className="h3">Search history</h2>{recent.length > 0 && <button type="button" className="link-btn" onClick={clearRecent}>Clear</button>}</div>
-            {recent.length === 0 ? <p className="note">Names you search will show up here.</p> : (
-              <ul>
-                {recent.map(r => (
-                  <li key={r.name}><span>{r.name}</span><Link to={'/?q=' + encodeURIComponent(r.name)}>Search again</Link></li>
-                ))}
-              </ul>
-            )}
-          </aside>
+      <Head title={<>Your shortlist. <span className="dim">Saved on this device.</span></>} />
+      <section className="wrap v5-saved">
+        <div className="v5-box">
+          <div className="v5-box-h">Saved addresses</div>
+          {saved.length === 0 ? (
+            <div className="v5-empty">
+              <Icon name="heart" size={22} />
+              <p>Nothing saved yet. Tap the heart on any result to keep it here.</p>
+              <Link className="btn btn-ink" to="/#search">Find your email</Link>
+            </div>
+          ) : (
+            <ul>
+              {saved.map((s, i) => {
+                const st = live[s.domain];
+                const taken = st && st.available === false;
+                const free = st && st.available;
+                return (
+                  <li key={s.address}>
+                    <button type="button" className="heart-btn" aria-label={`Remove ${s.address} from saved`} onClick={() => toggleSaved(s)}><Heart on /></button>
+                    <div className="sv-who"><span className="addr">{s.local}<span className="at">@</span>{s.domain}</span><span>{money(s.price)} / year</span></div>
+                    <span className={'state' + (taken ? ' bad' : free ? ' ok' : '')}>{taken ? 'Taken since you saved it' : free ? 'Still free' : 'Checking…'}</span>
+                    {taken
+                      ? <Link className="btn btn-soft" to={'/?q=' + encodeURIComponent(s.local + ' ' + s.domain.split('.')[0])}>See similar</Link>
+                      : <Link className={'btn ' + (i === 0 ? 'btn-blue' : 'btn-soft')} to={getUrl(s.address)}>Get this email</Link>}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
+        <aside className="v5-box" aria-label="Recent searches">
+          <div className="v5-box-h"><span>Recent searches</span>{recent.length > 0 && <button type="button" className="link-btn" onClick={clearRecent}>Clear</button>}</div>
+          {recent.length === 0 ? <p className="v5-none">Names you search show up here.</p> : (
+            <ul className="hist">
+              {recent.map(r => (
+                <li key={r.name}><Link to={'/?q=' + encodeURIComponent(r.name)}><Icon name="history" size={16} /><span>{r.name}</span><Icon name="arrow" size={16} /></Link></li>
+              ))}
+            </ul>
+          )}
+        </aside>
       </section>
+      <div className="v5-space" />
     </>
   );
 }

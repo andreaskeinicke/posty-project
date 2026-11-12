@@ -175,8 +175,8 @@ export function Closing() {
   return (
     <section className="band">
       <div className="wrap">
-        <div className="closing-panel">
-          <h2>Still introducing yourself with an <span className="dim">@hotmail.com?</span></h2>
+        <div className="closing-line">
+          <h2>Still on @hotmail.com? <span className="dim">Get an address that is actually yours.</span></h2>
           <SearchBox id="pl-q2" value={name} onChange={setName} onSubmit={v => navigate(v.trim() ? '/?q=' + encodeURIComponent(v.trim()) : '/#search')} />
         </div>
       </div>

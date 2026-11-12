@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { candidates, domainsFor, rank, addressRows, money } from './names';
 import { addRecent, clearRecent, isSaved, toggleSaved, useStore } from './store';
-import { Closing, Heart, Icon, Link, SearchBox, getUrl, navigate, useMeta, POSTY_MONTHLY, WORKSPACE_FROM } from './ui';
+import { Closing, Heart, Link, SearchBox, getUrl, navigate, useMeta, POSTY_MONTHLY, WORKSPACE_FROM } from './ui';
 
 // Home: pitch, search for an address, one button to get it.
 // Deep links: /?q=Maya+Lindqvist runs a search. The older &pick=local@domain opens checkout for that address.
@@ -96,9 +96,9 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
       <section className="hero" id="search">
         <div className="glow" aria-hidden="true" />
         <div className="wrap hero-in">
-          <span className="eyebrow pill"><i />Your own domain · Gmail by Google Workspace</span>
-          <h1>Get your dream email <span className="dim">today.</span></h1>
-          <p className="lede">Search a name, pick an address, press one button. Domain, inbox and setup: <b>we handle the rest.</b></p>
+          <span className="badge-soft">Your own domain, with Gmail by Google Workspace</span>
+          <h1>Get your dream email today.</h1>
+          <p className="lede">Search a name, pick an address, press one button. We register the domain, set up the inbox and handle the rest.</p>
 
           <SearchBox big value={name} onChange={setName} onSubmit={search} inputRef={inputRef} placeholder="Type your name, e.g. Anna Keinicke" />
           <p className="hint">
@@ -148,27 +148,15 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
       </section>
 
       <section className="band">
-        <div className="wrap split2 center">
-          <div className="head">
-            <span className="eyebrow">After you press the button</span>
-            <h2>From search to sent, <span className="dim">the same day.</span></h2>
-            <ol className="tiles">
-              <li className="t-sky"><span className="n">01</span><div><h3>We register your domain</h3><p>It's bought at cost and registered in your name. You own it, not us.</p></div></li>
-              <li className="t-peach"><span className="n">02</span><div><h3>We set up your inbox</h3><p>Your Google Workspace account, DNS records and security settings, all done for you. Nothing to configure.</p></div></li>
-              <li className="t-mint"><span className="n">03</span><div><h3>You start sending</h3><p>Sign in to Gmail with your new address on your phone and laptop. We help bring your old mail along.</p></div></li>
-            </ol>
-            <Link className="more" to="/how-it-works">See every step →</Link>
-          </div>
-          <div className="tracker-card" aria-label="Example of the moving-in tracker">
-            <div className="tc-head"><div><span className="eyebrow">Moving in</span><b>anna@keinicke.com</b></div><span className="stamp" aria-hidden="true">NOV<br />11</span></div>
-            <ul>
-              <li><Icon name="check" size={14} />keinicke.com registered to you</li>
-              <li><Icon name="check" size={14} />Google Workspace account created</li>
-              <li><Icon name="check" size={14} />Mail and security records connected</li>
-              <li className="last"><Icon name="check" size={14} />Inbox ready. Your first letter is waiting.</li>
-            </ul>
-            <p>You get a status update at every step, and a real person if anything needs a hand.</p>
-          </div>
+        <div className="wrap">
+          <span className="eyebrow">After you press the button</span>
+          <h2>From search to sent. <span className="dim">Usually the same day, with nothing to configure.</span></h2>
+          <ol className="grid3">
+            <li><span className="n">01</span><h3>We register your domain</h3><p>Bought at cost and registered in your name. You own it, not us.</p></li>
+            <li><span className="n">02</span><h3>We set up your inbox</h3><p>Your Google Workspace account, mail records and security settings, done for you.</p></li>
+            <li><span className="n">03</span><h3>You start sending</h3><p>Sign in to Gmail with your new address on your phone and laptop. We help bring your old mail along.</p></li>
+          </ol>
+          <Link className="more" to="/how-it-works">See every step →</Link>
         </div>
       </section>
 
@@ -176,8 +164,8 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
         <div className="wrap split2 center">
           <div className="head">
             <span className="eyebrow">Pricing</span>
-            <h2>One honest price. <span className="dim">No surprises.</span></h2>
-            <p className="sub">You see every line before you pay. Cancel any time, and the domain and mailbox stay yours.</p>
+            <h2>One honest price. <span className="dim">Every line up front.</span></h2>
+            <p className="sub">Cancel any time. The domain and the mailbox stay yours.</p>
           </div>
           <div className="panel receipt">
             <div className="line"><div><b>Posty</b><span>Finding, buying and setting up your address. Renewals, support and a person to ask.</span></div><b>${POSTY_MONTHLY} / month</b></div>
@@ -185,7 +173,7 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
             <div className="line"><div><b>Your domain</b><span>Registered in your name at cost. A .com is about $12 a year.</span></div><b>at cost</b></div>
             <div className="total">
               <div><span className="eyebrow">All in, for most people</span><p className="big-num">about $13<small> / month</small></p></div>
-              <Link className="btn btn-ink" to="/pricing">See pricing</Link>
+              <Link className="btn btn-ink" to="/#search">Find your email</Link>
             </div>
           </div>
         </div>

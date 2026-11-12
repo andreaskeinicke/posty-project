@@ -433,29 +433,33 @@ export function Saved() {
   const { saved, recent } = useStore();
   return (
     <>
-      <PageHead kicker="My searches" title={<>Your short <span className="dim">list.</span></>} sub="Addresses you saved and names you searched. They stay in this browser and are never sent to us." />
+      <PageHead left kicker="My searches" title={<>Your short list. <span className="dim">Saved in this browser.</span></>} sub="Addresses you saved and names you searched. They stay on this device and are never sent to us." />
       <section className="band tight">
-        <div className="wrap narrow">
-          {saved.length === 0 ? (
-            <div className="empty panel">
-              <Icon name="heart" size={22} />
-              <p>No saved addresses yet. Tap the heart on any result to keep it here.</p>
-              <Link className="btn btn-ink" to="/#search">Find your email</Link>
-            </div>
-          ) : (
-            <div className="panel results-panel">
-              <div className="panel-head"><p><b>{saved.length} saved</b></p></div>
-              <ul className="rows">{saved.map((s, i) => <ResultRow key={s.address} r={{ ...s, note: 'Saved ' + new Date(s.at || Date.now()).toLocaleDateString() + '. Check it is still free before you buy.' }} index={i + 1} saved={saved} />)}</ul>
-            </div>
-          )}
-          {recent.length > 0 && (
-            <div className="history">
-              <div className="ex-head"><h2 className="h3">Recent searches</h2><button type="button" className="link-btn" onClick={clearRecent}>Clear history</button></div>
-              <div className="recent left">
-                {recent.map(r => <Link key={r.name} className="recent-chip" to={'/?q=' + encodeURIComponent(r.name)}>{r.name}</Link>)}
+        <div className="wrap saved-grid">
+          <div>
+            {saved.length === 0 ? (
+              <div className="empty panel">
+                <Icon name="heart" size={22} />
+                <p>No saved addresses yet. Tap the heart on any result to keep it here.</p>
+                <Link className="btn btn-ink" to="/#search">Find your email</Link>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="panel results-panel">
+                <div className="panel-head"><p><b>{saved.length} saved {saved.length === 1 ? 'address' : 'addresses'}</b></p></div>
+                <ul className="rows">{saved.map((s, i) => <ResultRow key={s.address} r={{ ...s, note: 'Saved ' + new Date(s.at || Date.now()).toLocaleDateString() + '. We check it is still free before you pay.' }} index={i + 1} saved={saved} />)}</ul>
+              </div>
+            )}
+          </div>
+          <aside className="history-panel" aria-label="Search history">
+            <div className="hp-head"><h2 className="h3">Search history</h2>{recent.length > 0 && <button type="button" className="link-btn" onClick={clearRecent}>Clear</button>}</div>
+            {recent.length === 0 ? <p className="note">Names you search will show up here.</p> : (
+              <ul>
+                {recent.map(r => (
+                  <li key={r.name}><span>{r.name}</span><Link to={'/?q=' + encodeURIComponent(r.name)}>Search again</Link></li>
+                ))}
+              </ul>
+            )}
+          </aside>
         </div>
       </section>
     </>

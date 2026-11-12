@@ -3,6 +3,10 @@ const assert = require('node:assert');
 const { summarize, chanceToBeBest } = require('../services/experimentStats');
 const config = require('../../frontend/src/landing/headlines.json');
 
+// Fixed fixture so the maths tests don't depend on which headlines are live.
+const fixture = { experiment: 't', primary: 'search', minViewsPerVariant: 250,
+  variants: ['a', 'b', 'c', 'd'].map(id => ({ id, status: 'active', headline: 'Headline ' + id })) };
+
 const counts = (rows) => rows.flatMap(([variant, view, search]) => [
   { variant, event: 'view', n: view }, { variant, event: 'search', n: search }
 ]);
@@ -24,16 +28,16 @@ test('chance to be best sums to 1 and favours the better arm', () => {
 });
 
 test('keeps running until every headline has enough views', () => {
-  const s = summarize(config, counts([['a', 30, 9], ['b', 30, 3], ['c', 30, 3], ['d', 30, 3]]));
+  const s = summarize(fixture, counts([['a', 30, 9], ['b', 30, 3], ['c', 30, 3], ['d', 30, 3]]));
   assert.match(s.verdict, /^keep running/);
 });
 
 test('declares a clear winner', () => {
-  const s = summarize(config, counts([['a', 600, 60], ['b', 600, 150], ['c', 600, 62], ['d', 600, 58]]));
+  const s = summarize(fixture, counts([['a', 600, 60], ['b', 600, 150], ['c', 600, 62], ['d', 600, 58]]));
   assert.strictEqual(s.verdict, 'winner: b');
 });
 
 test('suggests retiring a clear loser before there is a winner', () => {
-  const s = summarize(config, counts([['a', 400, 80], ['b', 400, 78], ['c', 400, 20], ['d', 400, 76]]));
+  const s = summarize(fixture, counts([['a', 400, 80], ['b', 400, 78], ['c', 400, 20], ['d', 400, 76]]));
   assert.match(s.verdict, /^retire: c$/);
 });

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import SupportChat from './SupportChat';
 import { candidates, domainsFor, rank, addressRows, money, nameProblem } from './names';
 import { addRecent, clearRecent, isSaved, toggleSaved, useStore } from './store';
 import { headline, track } from './experiment';
@@ -177,6 +178,12 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
                 <div className="panel-foot">
                   <span>Only addresses you can actually get.</span>
                   {!showAll && rows.length > FIRST && <button type="button" className="link-btn" onClick={() => setShowAll(true)}>Show {Math.min(rows.length, MAX) - FIRST} more</button>}
+                </div>
+              )}
+              {status === 'ready' && rows.length > 0 && (
+                <div className="pad-x">
+                  <SupportChat compact stage="search" title="Ask Posty" intro="Not sure which one to pick?"
+                    context={{ query, addresses: shown.map(r => r.address) }} />
                 </div>
               )}
             </div>

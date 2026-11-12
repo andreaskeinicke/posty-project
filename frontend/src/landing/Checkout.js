@@ -3,6 +3,7 @@ import { track } from './experiment';
 import { priceOf, money } from './names';
 import { CopyButton, HELLO, Icon, Link, Logo, navigate, useMeta, POSTY_MONTHLY, WORKSPACE_FROM } from './ui';
 import { Photo } from './pages';
+import SupportChat from './SupportChat';
 
 // The "Get this email" flow, following the Paper frames:
 // /get (details + receipt) -> Stripe -> /moving-in (tracker) -> /welcome (moved in).
@@ -133,6 +134,7 @@ export function Checkout({ api }) {
         <div className="line"><div><b>Google Workspace</b><span>Billed by Google to your own account</span></div><b>from ${WORKSPACE_FROM} / month</b></div>
         <div className="due"><b>Due today</b><b className="amt">{check === 'loading' ? '…' : money(due)}</b></div>
         <p className="fine">Posty's first month plus the domain's first year. Google bills Workspace separately. VAT is added where it applies.</p>
+        <SupportChat compact stage="checkout" title="Ask before you pay" intro="Questions about what happens next?" context={{ address: pick.address, plan }} />
       </aside>
     </section>
   );
@@ -248,6 +250,7 @@ export function Welcome() {
               <div key={t} className="panel side-card"><span className="ic"><Icon name={ic} /></span><h3>{t}</h3><p>{d}</p><Link className="more" to={to}>{cta} →</Link></div>
             ))}
           </div>
+          <div className="wl-help"><SupportChat stage="welcome" intro="Help with your phone, old mail, DKIM or family addresses." context={{ address: pick.address }} /></div>
           <p className="fine center-t">Preview: this is the page you land on once setup is done.</p>
         </div>
       </section>

@@ -1,0 +1,26 @@
+name: Daily health check
+
+# Calls the live site once a day. A failing run emails the repository owner,
+# and the database query inside /health/deep keeps Supabase from pausing.
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check posty.club
+        run: |
+          for attempt in 1 2 3; do
+            if curl --fail --silent --show-error --max-time 30 https://posty.club/health/deep; then
+              exit 0
+            fi
+            echo "Attempt $attempt failed"
+            sleep 20
+          done
+          exit 1

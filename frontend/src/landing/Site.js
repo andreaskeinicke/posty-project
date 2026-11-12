@@ -24,6 +24,12 @@ function useLocation() {
 
 export default function Site({ api, onOpenChat, initialName }) {
   const { path, search } = useLocation();
+  // In-page links such as /pricing#behind: scroll once the page has rendered.
+  useEffect(() => {
+    const id = window.location.hash.slice(1);
+    const el = id && document.getElementById(id);
+    if (el) el.scrollIntoView();
+  }, [path, search]);
   let page;
   switch (path) {
     case '/': page = <Landing api={api} onOpenChat={onOpenChat} initialName={initialName} />; break;
@@ -33,7 +39,7 @@ export default function Site({ api, onOpenChat, initialName }) {
     case '/questions': case '/faq': page = <Questions />; break;
     case '/compare': page = <Compare />; break;
     case '/agents': page = <Agents />; break;
-    case '/saved': case '/my-searches': page = <Saved />; break;
+    case '/saved': case '/my-searches': page = <Saved api={api} />; break;
     case '/get': page = <Checkout api={api} />; break;
     case '/moving-in': page = <MovingIn />; break;
     case '/welcome': page = <Welcome />; break;

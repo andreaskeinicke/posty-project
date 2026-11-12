@@ -22,7 +22,7 @@ export function useInView(threshold = 0.3) {
 }
 
 // Types a few example names into an empty search box, then rests.
-const EXAMPLES = ['Anna Keinicke', 'Jens Holm', 'Sofie Lund'];
+const EXAMPLES = ['Mila Ostrand', 'Jens Holm', 'Sofie Lund'];
 export function useTypedPlaceholder(active, fallback) {
   const [text, setText] = useState(fallback);
   useEffect(() => {
@@ -44,14 +44,14 @@ export function useTypedPlaceholder(active, fallback) {
 }
 
 const RESULTS = [
-  ['anna@keinicke.com', '$12'], ['hi@annakeinicke.com', '$12'], ['anna@keinicke.dk', '$11'], ['anna@keinicke.studio', '$29']
+  ['mila@ostrand.com', '$12'], ['hi@milaostrand.com', '$12'], ['mila@ostrand.dk', '$11'], ['mila@ostrand.studio', '$29']
 ];
 export default function HeroVisual() {
   const [ref, inView] = useInView(0.35);
   return (
     <div className={'hero-visual' + (inView ? ' in' : '')} ref={ref} aria-hidden="true">
       <div className="hv-glass">
-        <div className="hv-head"><Logo size={18} /><b>Posty</b><span>· anna keinicke</span></div>
+        <div className="hv-head"><Logo size={18} /><b>Posty</b><span>· mila ostrand</span></div>
         {RESULTS.map(([addr, price], i) => {
           const [local, domain] = addr.split('@');
           return (

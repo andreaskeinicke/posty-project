@@ -162,14 +162,14 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
           <div className="pair">
             <div className="pair-card">
               <dl className="ba">
-                <dt>Before</dt><dd className="old">anna.keinicke84@hotmail.com</dd>
-                <dt>After</dt><dd className="new"><Logo size={22} />anna@keinicke.com</dd>
+                <dt>Before</dt><dd className="old">mila.ostrand87@hotmail.com</dd>
+                <dt>After</dt><dd className="new"><Logo size={22} />mila@ostrand.com</dd>
               </dl>
               <div><h3>Your name, at last</h3><p>Short and personal on a domain that carries your name. It works for the rest of your life, whoever you work for.</p></div>
             </div>
             <div className="pair-card">
               <dl className="own">
-                <div><dt>Domain owner</dt><dd>You, by name</dd></div>
+                <div><dt>Domain owner</dt><dd>Mila Ostrand</dd></div>
                 <div><dt>Mailbox</dt><dd>Google Workspace, your account</dd></div>
                 <div><dt>Mail records</dt><dd>MX · SPF · DKIM · DMARC, set up</dd></div>
                 <div><dt>Renewal</dt><dd>At cost, watched by Posty</dd></div>

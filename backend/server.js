@@ -41,6 +41,7 @@ app.use('/api/domains', require('./routes/domains'));
 app.use('/api/questionnaire', require('./routes/questionnaire'));
 app.use('/api/checkout', require('./routes/checkout'));
 app.use('/api/verification', require('./routes/verification'));
+app.use('/api/fulfilment', require('./routes/fulfilment'));
 
 // Health check
 app.get('/health', (req, res) => {
@@ -114,6 +115,8 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`🚀 Posty API server running on port ${PORT}`);
   console.log(`📧 Environment: ${process.env.NODE_ENV || 'development'}`);
+  // Automated setup after payment; no-op unless FULFILMENT_ENABLED=true
+  require('./fulfilment').startRunner();
 });
 
 module.exports = app;

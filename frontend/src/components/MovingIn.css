@@ -1,0 +1,50 @@
+.mi-page { min-height: 100vh; background: linear-gradient(180deg, #eef4ff 0%, #fff 320px); color: #0f172a;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.mi-wrap { max-width: 1200px; margin: 0 auto; padding: 64px 16px; }
+.mi-eyebrow { text-align: center; font: 600 13px/1 ui-monospace, Menlo, monospace; letter-spacing: .12em; text-transform: uppercase; color: #dc4a2e; }
+.mi-title { text-align: center; font-size: clamp(34px, 6vw, 60px); letter-spacing: -.03em; margin: 16px 0 12px; font-weight: 600; }
+.mi-title em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; color: #3b82f6; }
+.mi-sub { text-align: center; max-width: 620px; margin: 0 auto; color: #475569; font-size: 18px; line-height: 1.55; }
+.mi-grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 24px; margin-top: 48px; align-items: start; }
+@media (max-width: 860px) { .mi-grid { grid-template-columns: 1fr; } .mi-wrap { padding-top: 40px; } }
+.mi-card, .mi-note { background: #fff; border: 1px solid #e2e8f0; border-radius: 24px; box-shadow: 0 10px 40px rgba(15, 23, 42, .05); }
+.mi-card { padding: 28px 32px; }
+@media (max-width: 520px) { .mi-card { padding: 20px; } }
+.mi-card-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 20px; overflow-wrap: anywhere; }
+.mi-pill { flex: none; font-size: 14px; font-weight: 600; color: #2563eb; background: #eff6ff; padding: 6px 12px; border-radius: 999px; }
+.mi-bar { height: 4px; background: #eef2f7; border-radius: 4px; margin: 16px 0 8px; overflow: hidden; }
+.mi-bar > div { height: 100%; background: linear-gradient(90deg, #93c5fd, #3b82f6); transition: width .4s ease; }
+.mi-steps { list-style: none; margin: 0; padding: 0; }
+.mi-step { display: flex; gap: 16px; padding: 20px 0; border-bottom: 1px solid #eef2f7; }
+.mi-step:last-child { border-bottom: 0; }
+.mi-dot { flex: none; width: 32px; height: 32px; border-radius: 50%; border: 2px dashed #cbd5e1; display: grid; place-items: center; color: #fff; font-size: 15px; font-weight: 700; }
+.mi-done .mi-dot { background: #3b82f6; border: 0; }
+.mi-working .mi-dot { border: 2px solid #3b82f6; border-top-color: transparent; animation: mi-spin 1s linear infinite; }
+.mi-waiting_on_you .mi-dot { border: 2px solid #dc4a2e; box-shadow: 0 0 0 6px #fde8e3; background: radial-gradient(#dc4a2e 0 5px, #fff 6px); }
+@keyframes mi-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .mi-working .mi-dot { animation: none; } }
+.mi-step-body { flex: 1; min-width: 0; }
+.mi-step-row { display: flex; justify-content: space-between; gap: 12px; }
+.mi-step-title { font-size: 17px; font-weight: 600; }
+.mi-pending .mi-step-title { color: #94a3b8; }
+.mi-step-meta { flex: none; font: 13px ui-monospace, Menlo, monospace; color: #64748b; }
+.mi-step p { margin: 4px 0 0; color: #475569; font-size: 15px; }
+.mi-action { margin-top: 16px; padding: 18px 20px; border: 1px solid #f8c9bd; background: #fff6f3; border-radius: 16px; display: grid; gap: 14px; }
+.mi-action strong { font-size: 16px; }
+.mi-btn { display: inline-flex; justify-content: center; align-items: center; min-height: 44px; padding: 0 20px; border-radius: 999px;
+  background: #0f172a; color: #fff; font-weight: 600; border: 0; cursor: pointer; text-decoration: none; justify-self: start; }
+.mi-btn:disabled { opacity: .5; cursor: default; }
+.mi-form { display: grid; gap: 8px; margin-top: 4px; }
+.mi-form label { font-size: 14px; font-weight: 600; color: #334155; }
+.mi-form input, .mi-form textarea { width: 100%; box-sizing: border-box; padding: 12px 14px; border: 1px solid #cbd5e1; border-radius: 12px;
+  font: 14px ui-monospace, Menlo, monospace; background: #fff; }
+.mi-error { color: #b42318 !important; }
+.mi-link { margin-top: 16px; background: none; border: 0; color: #2563eb; cursor: pointer; padding: 0; font-size: 14px; }
+.mi-side { display: grid; gap: 16px; }
+.mi-note { padding: 22px 24px; }
+.mi-note h3 { margin: 0 0 6px; font-size: 17px; }
+.mi-note p { margin: 0; color: #475569; font-size: 15px; line-height: 1.5; }
+/* The legacy app shell centres everything on a purple gradient; the tracker is a full page. */
+body:has(.mi-page) { background: #fff; }
+#root:has(.mi-page) { display: block; padding: 0; }
+.mi-page { width: 100%; }

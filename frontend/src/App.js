@@ -8,6 +8,7 @@ import SignupForm from './components/Auth/SignupForm';
 import LoginForm from './components/Auth/LoginForm';
 import CheckoutSuccess from './components/CheckoutSuccess';
 import CheckoutCanceled from './components/CheckoutCanceled';
+import MovingIn from './components/MovingIn';
 
 // Configure axios base URL
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
@@ -21,6 +22,11 @@ function Root() {
   }
   if (path === '/checkout/canceled') {
     return <CheckoutCanceled />;
+  }
+  // Order status link from our emails: /order/<token>
+  const orderMatch = path.match(/^\/order\/([A-Za-z0-9_-]{16,})$/);
+  if (orderMatch) {
+    return <MovingIn token={orderMatch[1]} />;
   }
   return <App />;
 }

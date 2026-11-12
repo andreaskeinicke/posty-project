@@ -187,7 +187,7 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
           <ol className="grid3">
             <li><span className="n">01</span><h3>We register your domain</h3><p>Bought at cost and registered in your name. You own it, not us.</p></li>
             <li><span className="n">02</span><h3>We set up your inbox</h3><p>Your Google Workspace account, mail records and security settings, done for you.</p></li>
-            <li><span className="n">03</span><h3>You start sending</h3><p>Sign in to Gmail with your new address on your phone and laptop. We help bring your old mail along.</p></li>
+            <li><span className="n">03</span><h3>You start sending</h3><p>Sign in to Gmail on your phone and laptop. We help bring your old mail along.</p></li>
           </ol>
           <Link className="more" to="/how-it-works">See every step →</Link>
         </div>

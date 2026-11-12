@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import SupportChat from './SupportChat';
 import { priceOf, money } from './names';
-import { CopyButton, HELLO, Icon, Link, Logo, navigate, useMeta, POSTY_MONTHLY, WORKSPACE_FROM, WORKSPACE_STANDARD_FROM } from './ui';
+import { CopyButton, HELLO, Icon, Link, Logo, navigate, useMeta, POSTY_MONTHLY, WORKSPACE_FROM } from './ui';
+import { Photo } from './pages';
+import SupportChat from './SupportChat';
 
 // The "Get this email" flow, following the Paper frames:
 // /get (details + receipt) -> Stripe -> /moving-in (tracker) -> /welcome (moved in).
@@ -52,7 +53,7 @@ export function Checkout({ api }) {
   const [check, setCheck] = useState(pick ? 'loading' : 'bad'); // loading | ok | taken | bad | error
   const [price, setPrice] = useState(pick ? priceOf(pick.domain, {}) : 0);
   const [form, setForm] = useState({ firstName: pick ? cap(pick.local.split(/[.-]/)[0]) : '', lastName: '', contactEmail: '', country: 'DK' });
-  const [plan, setPlan] = useState('starter');
+  const plan = 'starter'; // Workspace plan can be changed later with Google
   const [stage, setStage] = useState('review'); // review | working
   const [error, setError] = useState('');
 
@@ -79,7 +80,6 @@ export function Checkout({ api }) {
   }
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
-  const first = form.firstName.trim() || pick.local;
   const ready = check === 'ok' && stage === 'review';
   const go = async e => {
     e.preventDefault();
@@ -95,84 +95,47 @@ export function Checkout({ api }) {
     }
   };
 
+  const due = price + POSTY_MONTHLY;
   return (
-    <>
-      <section className="page-head co-head">
-        <div className="glow" aria-hidden="true" />
-        <div className="wrap hero-in">
-          <h1>Almost yours, <span className="dim">{first}.</span></h1>
-          <p className="lede">A minute or two. You'll see every line before you pay.</p>
+    <section className="wrap v5-co">
+      <form className="v5-co-main" onSubmit={go}>
+        <h1>Almost yours. <span className="dim">Two short steps.</span></h1>
+        {check === 'loading' && <p className="note">Checking that {pick.domain} is still free…</p>}
+        {check === 'taken' && <p className="err" role="alert">Someone else has {pick.domain} now. <Link className="link-btn" to={'/?q=' + encodeURIComponent(pick.local + ' ' + pick.domain.split('.')[0])}>See similar addresses</Link></p>}
+        {check === 'error' && <p className="err" role="alert">We couldn't check {pick.domain} just now. Reload in a moment.</p>}
+
+        <h2 className="co-h">1 Who is the address for</h2>
+        <div className="fields two">
+          <label>First name<input value={form.firstName} onChange={set('firstName')} autoComplete="given-name" required maxLength={80} /></label>
+          <label>Last name<input value={form.lastName} onChange={set('lastName')} autoComplete="family-name" required maxLength={80} /></label>
         </div>
-      </section>
-      <form className="wrap co-grid" onSubmit={go}>
-        <div className="co-main">
-          <section className="panel step-card">
-            <h2 className="step-h"><span className="sn done"><Icon name="check" size={14} /></span>Your new address</h2>
-            <div className="addr-box">
-              <span className="addr">{pick.address}</span>
-              <Link className="link-btn" to={'/?q=' + encodeURIComponent(pick.local + ' ' + pick.domain.split('.')[0])}>Change</Link>
-            </div>
-            {check === 'loading' && <p className="note">Checking that {pick.domain} is still free…</p>}
-            {check === 'taken' && <p className="err" role="alert">Someone else has {pick.domain} now. <Link className="link-btn" to="/#search">Search again</Link> for another address.</p>}
-            {check === 'error' && <p className="err" role="alert">We couldn't check {pick.domain} just now. Reload in a moment.</p>}
-          </section>
-
-          <section className="panel step-card">
-            <h2 className="step-h"><span className="sn">2</span>About you</h2>
-            <div className="fields two">
-              <label>First name<input value={form.firstName} onChange={set('firstName')} autoComplete="given-name" required maxLength={80} /></label>
-              <label>Last name<input value={form.lastName} onChange={set('lastName')} autoComplete="family-name" required maxLength={80} /></label>
-            </div>
-            <div className="fields">
-              <label>Where should we send updates until you move in?<input type="email" value={form.contactEmail} onChange={set('contactEmail')} autoComplete="email" required maxLength={254} placeholder="your current email" /></label>
-              <p className="fine">Only for receipts and setup updates. Not shared, not marketed to.</p>
-            </div>
-            <div className="fields two">
-              <label>Country<select value={form.country} onChange={set('country')} autoComplete="country">{COUNTRIES.map(([c, n]) => <option key={n} value={c}>{n}</option>)}</select></label>
-            </div>
-          </section>
-
-          <section className="panel step-card">
-            <h2 className="step-h"><span className="sn">3</span>Your inbox</h2>
-            <div className="plans" role="radiogroup" aria-label="Google Workspace plan">
-              {[['starter', 'Google Workspace', 'Gmail, Calendar and Drive on your own domain. Best for most people.', WORKSPACE_FROM],
-                ['standard', 'Workspace Standard', 'More storage, longer meetings and recordings. Switch any time.', WORKSPACE_STANDARD_FROM]].map(([k, t, d, p]) => (
-                <label key={k} className={'plan-opt' + (plan === k ? ' on' : '')}>
-                  <input type="radio" name="plan" value={k} checked={plan === k} onChange={() => setPlan(k)} />
-                  <b>{t}</b><span>{d}</span><b className="from">from ${p} / mo, billed by Google</b>
-                </label>
-              ))}
-            </div>
-            <p className="fine">After payment you sign in with Google once to approve Workspace. Google bills you directly, and you can switch plan later without changing address.</p>
-          </section>
-
-          <section className="panel step-card">
-            <h2 className="step-h"><span className="sn">4</span>Pay</h2>
-            <p className="sub-s">You pay on Stripe's secure page. Posty never sees your card number.</p>
-          </section>
+        <div className="fields co-reach">
+          <label>Where we can reach you now<input type="email" value={form.contactEmail} onChange={set('contactEmail')} autoComplete="email" required maxLength={254} placeholder="your current email, for setup updates" /></label>
+          <label>Country<select value={form.country} onChange={set('country')} autoComplete="country">{COUNTRIES.map(([c, n]) => <option key={n} value={c}>{n}</option>)}</select></label>
         </div>
+        <p className="fine">The domain is registered to this name. That makes it yours.</p>
 
-        <aside className="panel receipt-card" aria-label="Your receipt">
-          <span className="eyebrow mono">Your receipt</span>
-          <p className="r-addr">{pick.address}</p>
-          <div className="line"><div><b>{pick.domain}, first year</b><span>Registered in your name. Renews at cost.</span></div><b>{check === 'loading' ? '…' : money(price)}</b></div>
-          <div className="line"><div><b>Posty, first month</b><span>Setup, renewals, support.</span></div><b>{money(POSTY_MONTHLY)}</b></div>
-          <div className="line"><div><b>{plan === 'standard' ? 'Workspace Standard' : 'Google Workspace'}</b><span>From ${plan === 'standard' ? WORKSPACE_STANDARD_FROM : WORKSPACE_FROM} / month after you approve it.</span></div><b>billed by Google</b></div>
-          <div className="due"><span>Due today</span><b>{check === 'loading' ? '…' : money(price + POSTY_MONTHLY)}</b></div>
-          <p className="fine">Then ${POSTY_MONTHLY} / month for Posty. Cancel any time; the domain stays yours.</p>
-          {error && <p className="err" role="alert">{error}</p>}
-          <button className="btn btn-blue wide" type="submit" disabled={!ready}>{stage === 'working' ? 'Opening secure checkout…' : 'Get ' + pick.address}</button>
-          <ul className="trust">
-            <li><Icon name="shield" size={15} />You own the domain, not us</li>
-            <li><Icon name="shield" size={15} />Cancel any time</li>
-            <li><Icon name="shield" size={15} />Danish company</li>
-          </ul>
-          {api.demo && <p className="fine">Demo: nothing is bought or charged.</p>}
-          <SupportChat compact stage="checkout" title="Ask before you pay" intro="Questions about what happens next?"
-            context={{ address: pick.address, plan }} />
-        </aside>
+        <h2 className="co-h">2 Payment</h2>
+        <div className="co-pay"><span className="v5-tile"><Icon name="card" size={18} /></span><div><b>Card or wallet</b><span>Handled securely by Stripe. Posty never sees your card.</span></div><Icon name="lock" size={18} /></div>
+
+        {error && <p className="err" role="alert">{error}</p>}
+        <div className="co-go">
+          <button className="btn btn-ink" type="submit" disabled={!ready}>{stage === 'working' ? 'Opening secure checkout…' : 'Get ' + pick.address}</button>
+          <span>Cancel any time. The domain stays yours.</span>
+        </div>
+        {api.demo && <p className="fine">Demo: nothing is bought or charged.</p>}
       </form>
-    </>
+
+      <aside className="v5-sum" aria-label="Your order">
+        <div className="sum-addr"><Logo size={32} /><div><b className="addr">{pick.local}<span className="at">@</span>{pick.domain}</b><span>Your new address</span></div></div>
+        <div className="line"><div><b>{pick.domain}</b><span>Domain, at cost, registered to you</span></div><b>{check === 'loading' ? '…' : money(price) + ' / year'}</b></div>
+        <div className="line"><div><b>Posty</b><span>Setup, renewals and help</span></div><b>{money(POSTY_MONTHLY)} / month</b></div>
+        <div className="line"><div><b>Google Workspace</b><span>Billed by Google to your own account</span></div><b>from ${WORKSPACE_FROM} / month</b></div>
+        <div className="due"><b>Due today</b><b className="amt">{check === 'loading' ? '…' : money(due)}</b></div>
+        <p className="fine">Posty's first month plus the domain's first year. Google bills Workspace separately. VAT is added where it applies.</p>
+        <SupportChat compact stage="checkout" title="Ask before you pay" intro="Questions about what happens next?" context={{ address: pick.address, plan }} />
+      </aside>
+    </section>
   );
 }
 
@@ -181,63 +144,43 @@ export function Checkout({ api }) {
 export function MovingIn() {
   const pick = readAddress() || { address: 'you@yourname.com', domain: 'yourname.com', local: 'you' };
   useMeta('Moving in · Posty', 'Your new address is being set up.', '/moving-in', true);
-  const [done, setDone] = useState(2);
   const steps = [
-    ['Payment received', 'Receipt sent to your current inbox.'],
-    [pick.domain + ' registered in your name', 'You are the owner on record. Renews at cost each year.'],
-    ['Your turn: approve Google Workspace', 'This is the only step we cannot do for you.'],
-    ['Mail records connected', 'We set up MX, SPF, DKIM and DMARC so your mail arrives and is trusted.'],
-    ['Inbox ready', 'We send a first letter to your new address so you can see it works.']
+    ['Domain registered', `${pick.domain} is registered in your name.`],
+    ['Inbox created', `Google Workspace is set up for ${pick.address}.`],
+    ['Mail records set', 'MX, SPF, DKIM and DMARC are in place.'],
+    ['Sign in to Gmail', 'Your turn. Use the password from the email we just sent.'],
+    ['Bring your old mail', 'Optional. We show you how to move it over from Hotmail.']
   ];
-  useEffect(() => {
-    if (done < 3 || done >= steps.length) return undefined;
-    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const t = setTimeout(() => setDone(d => d + 1), reduce ? 200 : 1100);
-    return () => clearTimeout(t);
-  }, [done, steps.length]);
-  const finished = done >= steps.length;
-  const tag = i => i < done ? '' : i === done && i === 2 ? 'waiting on you' : i === done ? 'working' : i === 3 ? 'after approval' : 'usually minutes';
+  const [at, setAt] = useState(3);
   return (
-    <>
-      <section className="page-head">
-        <div className="glow" aria-hidden="true" />
-        <div className="wrap hero-in">
-          <span className="eyebrow flag">Moving in · step 3 of 3</span>
-          <h1>Your letters are <span className="dim">on their way.</span></h1>
-          <p className="lede">Payment received. We're setting up {pick.address} now. There is one thing only you can do, and it takes about a minute.</p>
-        </div>
-      </section>
-      <div className="wrap mi-grid">
-        <section className="panel mi-card" aria-live="polite">
-          <div className="mi-top"><b className="addr">{pick.address}</b><span className="badge soft">{Math.min(done, steps.length)} of {steps.length} done</span></div>
-          <div className="bar"><i style={{ width: (Math.min(done, steps.length) / steps.length) * 100 + '%' }} /></div>
-          <ol className="mi-steps">
-            {steps.map(([t, d], i) => (
-              <li key={t} className={i < done ? 'done' : i === done ? (i === 2 ? 'you' : 'run') : ''}>
-                <span className="st">{i < done && <Icon name="check" size={14} />}</span>
-                <div>
-                  <div className="mi-row"><b>{t}</b><span className="mono tag">{tag(i)}</span></div>
-                  <p>{d}</p>
-                  {i === 2 && done === 2 && (
-                    <div className="approve">
-                      <div><b>Approve Google Workspace</b><span>Sign in with Google and accept their terms. Google bills you from here.</span></div>
-                      <button type="button" className="btn btn-ink" onClick={() => setDone(3)}>Continue with Google</button>
-                    </div>
-                  )}
-                </div>
+    <section className="wrap v5-mi">
+      <div>
+        <h1>{pick.address} is yours. <span className="dim">Here's where we are.</span></h1>
+        <p className="lede">We email you at each step, so you can close this page.</p>
+        <ol className="mi-list" aria-live="polite">
+          {steps.map(([t, d], i) => {
+            const st = i < at ? 'done' : i === at ? 'now' : '';
+            return (
+              <li key={t} className={st}>
+                <span className="mi-dot" aria-hidden="true">{i < at && <Icon name="check" size={14} />}</span>
+                <div><b>{t}</b><span>{d}</span></div>
+                {i === at && i === 3 && <a className="btn btn-ink" href="https://mail.google.com/" target="_blank" rel="noopener noreferrer" onClick={() => setAt(4)}>Open Gmail</a>}
+                {i === at && i === 4 && <Link className="btn btn-soft" to={'/welcome?address=' + encodeURIComponent(pick.address)}>Show me how</Link>}
+                <span className="sr">{st === 'done' ? ' (done)' : st === 'now' ? ' (current step)' : ''}</span>
               </li>
-            ))}
-          </ol>
-          {finished && <Link className="btn btn-blue" to={'/welcome?address=' + encodeURIComponent(pick.address)}>See your new inbox →</Link>}
-          <p className="fine">Preview: this page shows the setup steps. Nothing here is connected to a real account yet.</p>
-        </section>
-        <div className="mi-side">
-          <div className="panel side-card"><span className="ic"><Icon name="mail" /></span><h3>We keep you posted</h3><p>Every step lands in your current inbox, so you can close this page. Nothing to watch.</p></div>
-          <div className="panel side-card"><span className="ic"><Icon name="chat" /></span><h3>A real person if you need one</h3><p>Stuck on the Google step? Write to {HELLO} and a person replies.</p></div>
-          <div className="panel side-card"><span className="ic"><Icon name="shield" /></span><h3>Already safe</h3><p>The domain is registered to you. If you stop here, it is still yours.</p></div>
-        </div>
+            );
+          })}
+        </ol>
+        <p className="fine mi-fine">Preview: this page shows the setup steps. Your real order page has the live status.</p>
       </div>
-    </>
+      <Photo className="mi-photo">
+        <div className="v5-glass mi-glass">
+          <div className="hv-head"><Logo size={16} /><b>Posty</b><span>· your first letter</span></div>
+          <div className="hv-row on"><span className="hv-addr"><b>Mormor</b><br /><span>Is this your new address?</span></span><span className="hv-price">now</span></div>
+          <div className="hv-row"><span className="hv-addr"><b>Sofie Lund</b><br /><span>Coffee on Thursday?</span></span><span className="hv-price">09:12</span></div>
+        </div>
+      </Photo>
+    </section>
   );
 }
 
@@ -306,10 +249,7 @@ export function Welcome() {
               <div key={t} className="panel side-card"><span className="ic"><Icon name={ic} /></span><h3>{t}</h3><p>{d}</p><Link className="more" to={to}>{cta} →</Link></div>
             ))}
           </div>
-          <div className="wl-help">
-            <SupportChat stage="welcome" title="Ask Posty" intro="Help with your phone, old mail, DKIM or family addresses."
-              context={{ address: pick.address }} />
-          </div>
+          <div className="wl-help"><SupportChat stage="welcome" intro="Help with your phone, old mail, DKIM or family addresses." context={{ address: pick.address }} /></div>
           <p className="fine center-t">Preview: this is the page you land on once setup is done.</p>
         </div>
       </section>

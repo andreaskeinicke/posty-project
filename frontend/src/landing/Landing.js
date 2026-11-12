@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { candidates, domainsFor, rank, addressRows, money } from './names';
 import { addRecent, clearRecent, isSaved, toggleSaved, useStore } from './store';
+import { headline, track } from './experiment';
 import { Closing, Heart, Link, SearchBox, getUrl, navigate, useMeta, POSTY_MONTHLY, WORKSPACE_FROM } from './ui';
 
 // Home: pitch, search for an address, one button to get it.
@@ -27,7 +28,7 @@ export function ResultRow({ r, index, saved }) {
       <div className="row-price"><b>{money(r.price)} / year</b><span>domain, at cost</span></div>
       <div className="row-acts">
         <button type="button" className="icon-btn" aria-pressed={on} aria-label={on ? `Remove ${r.address} from saved` : `Save ${r.address}`} onClick={() => toggleSaved(r)}><Heart on={on} /></button>
-        <Link className={'btn ' + (top ? 'btn-blue' : 'btn-soft')} to={getUrl(r.address)}>Get this email</Link>
+        <Link className={'btn ' + (top ? 'btn-blue' : 'btn-soft')} to={getUrl(r.address)} onClick={() => track('get')}>Get this email</Link>
       </div>
     </li>
   );
@@ -56,12 +57,14 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
   const { recent, saved } = useStore();
   const inputRef = useRef(null);
   const reqId = useRef(0);
+  const h1 = headline().variant.headline;
 
   const search = async value => {
     const q = value.trim();
     setQuery(q); setName(q); setShowAll(false);
     if (!q) { setStatus('idle'); setList([]); return; }
     if (!api.demo || value !== initialName) {
+      if (!api.demo) track('search');
       addRecent(q);
       const url = new URL(window.location.href);
       url.searchParams.set('q', q); url.searchParams.delete('pick'); url.hash = '';
@@ -80,6 +83,7 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
   };
 
   useEffect(() => {
+    if (!api.demo) track('view');
     if (start.pick && start.pick.includes('@')) { navigate(getUrl(start.pick)); return; }
     if (first) search(first);
     if (window.location.hash === '#search' && inputRef.current) inputRef.current.focus();
@@ -97,7 +101,7 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
         <div className="glow" aria-hidden="true" />
         <div className="wrap hero-in">
           <span className="badge-soft">Your own domain, with Gmail by Google Workspace</span>
-          <h1>Get your dream email today.</h1>
+          <h1>{h1}</h1>
           <p className="lede">Search a name, pick an address, press one button. We register the domain, set up the inbox and handle the rest.</p>
 
           <SearchBox big value={name} onChange={setName} onSubmit={search} inputRef={inputRef} placeholder="Type your name, e.g. Anna Keinicke" />

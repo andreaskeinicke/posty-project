@@ -34,4 +34,4 @@ A change to `headlines.json` is a normal PR. Merging it deploys.
 
 | Experiment | Dates | Result |
 |---|---|---|
-| home-headline-1 | from 2026-11-12 | running: a "Get your dream email today." (control), b "Email with your name on it.", c "Still on @hotmail.com? Time for an upgrade.", d "The modern version of your email." |
+| home-headline-1 | from 2026-11-12 | running: a "Email with your name on it." (control, Andreas's pick), b "Get your dream email today.", c "Still on @hotmail.com? Time for an upgrade.", d "The modern version of your email." |

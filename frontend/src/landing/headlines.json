@@ -4,8 +4,8 @@
   "primary": "search",
   "minViewsPerVariant": 250,
   "variants": [
-    { "id": "a", "status": "active", "headline": "Get your dream email today." },
-    { "id": "b", "status": "active", "headline": "Email with your name on it." },
+    { "id": "a", "status": "active", "headline": "Email with your name on it.", "control": true },
+    { "id": "b", "status": "active", "headline": "Get your dream email today." },
     { "id": "c", "status": "active", "headline": "Still on @hotmail.com? Time for an upgrade." },
     { "id": "d", "status": "active", "headline": "The modern version of your email." },
     { "id": "e", "status": "queued", "headline": "Finally, an email address you are proud of." },

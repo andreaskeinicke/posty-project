@@ -84,28 +84,52 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
   const h1 = headline().variant.headline;
   const typed = useTypedPlaceholder(!name, 'Type your name');
 
-  const search = async value => {
+  const cache = useRef({}); // domain -> availability, so live typing only checks new domains
+  const liveTimer = useRef(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // live: true while typing (search-as-you-type). It keeps the input as typed,
+  // keeps the last results on screen while checking, and does not add to Recent.
+  const search = async (value, { live = false } = {}) => {
     const q = value.trim();
-    setQuery(q); setName(q); setShowAll(false);
-    if (!q) { setStatus('idle'); setList([]); return; }
+    clearTimeout(liveTimer.current);
+    setQuery(q); setShowAll(false);
+    if (!live) setName(q);
+    if (!q) { reqId.current++; setStatus('idle'); setList([]); setRefreshing(false); return; }
     if (!api.demo || value !== initialName) {
-      if (!api.demo) track('search');
-      addRecent(q);
+      if (!live) { if (!api.demo) track('search'); addRecent(q); }
       const url = new URL(window.location.href);
       url.searchParams.set('q', q); url.searchParams.delete('pick'); url.hash = '';
       window.history.replaceState({}, '', url.pathname + url.search);
     }
     const cands = candidates(q);
+    const domains = domainsFor(cands);
     const id = ++reqId.current;
-    setStatus('loading');
+    const missing = domains.filter(d => !(d in cache.current));
+    if (status === 'ready' && live) setRefreshing(true); else setStatus('loading');
     try {
-      const avail = await api.checkDomains(domainsFor(cands));
+      if (missing.length) Object.assign(cache.current, await api.checkDomains(missing));
       if (id !== reqId.current) return;
-      setAvailability(avail); setList(cands); setStatus('ready');
+      const avail = {};
+      domains.forEach(d => { if (cache.current[d]) avail[d] = cache.current[d]; });
+      setAvailability(avail); setList(cands); setStatus('ready'); setRefreshing(false);
+      // Remember a live search once the person stops typing for a moment.
+      if (live) liveTimer.current = setTimeout(() => { if (id !== reqId.current) return; if (!api.demo) track('search'); addRecent(q); }, 2500);
     } catch (e) {
-      if (id === reqId.current) setStatus('error');
+      if (id === reqId.current) { setStatus('error'); setRefreshing(false); }
     }
   };
+
+  const onType = v => {
+    setName(v);
+    clearTimeout(liveTimer.current);
+    const q = v.trim();
+    if (!q) { search(''); return; }
+    if (q.replace(/[^a-z]/gi, '').length < 3) return;
+    if (!candidates(q).length) return; // half-typed or unusable names cost no lookups
+    liveTimer.current = setTimeout(() => search(v, { live: true }), 450);
+  };
+  useEffect(() => () => clearTimeout(liveTimer.current), []);
 
   useEffect(() => {
     if (!api.demo) track('view');
@@ -137,7 +161,7 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
           <h1>{h1}</h1>
           <p className="lede">{HERO.sub}</p>
 
-          <SearchBox big value={name} onChange={setName} onSubmit={search} inputRef={inputRef} placeholder={typed} />
+          <SearchBox big value={name} onChange={onType} onSubmit={v => search(v)} inputRef={inputRef} placeholder={typed} />
           <p className="hint">
             About $13 a month, all in. Cancel any time, the domain stays yours.
             {onOpenChat && <><span className="dot-sep">·</span><button type="button" className="link-btn" onClick={onOpenChat}>Not sure? Let Posty suggest a few</button></>}
@@ -159,14 +183,14 @@ export default function Landing({ api, onOpenChat, initialName = '' }) {
                 <button key={k} type="button" className="chip" aria-pressed={style === k} onClick={() => { setStyle(k); setShowAll(false); }}>{label}</button>
               ))}
             </div>
-            <div className="panel results-panel" aria-live="polite">
+            <div className={'panel results-panel' + (refreshing ? ' is-refreshing' : '')} aria-live="polite" aria-busy={status === 'loading' || refreshing}>
               <div className="panel-head">
                 <p>
                   {status === 'loading' && <>Checking addresses for “{query}”…</>}
                   {status === 'ready' && <><b>{freeCount} {freeCount === 1 ? 'address' : 'addresses'} free</b> for “{query}”, best first</>}
                   {status === 'error' && <>We couldn't check domains just now.</>}
                 </p>
-                {status === 'ready' && <span className="live">{api.demo ? 'Simulated · demo' : 'Checked live just now'}</span>}
+                {status === 'ready' && <span className="live">{refreshing ? 'Checking…' : api.demo ? 'Simulated · demo' : 'Checked live just now'}</span>}
               </div>
               {status === 'loading' && <ul className="rows">{[0, 1, 2].map(i => <li key={i} className="skeleton" />)}</ul>}
               {status === 'ready' && rows.length > 0 && (

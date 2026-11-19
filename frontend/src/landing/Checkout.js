@@ -133,7 +133,7 @@ export function Checkout({ api }) {
         <div className="line"><div><b>Posty</b><span>Setup, renewals and help</span></div><b>{money(POSTY_MONTHLY)} / month</b></div>
         <div className="line"><div><b>Google Workspace</b><span>Billed by Google to your own account</span></div><b>from ${WORKSPACE_FROM} / month</b></div>
         <div className="due"><b>Due today</b><b className="amt">{check === 'loading' ? '…' : money(due)}</b></div>
-        <p className="fine">Posty's first month plus the domain's first year. Google bills Workspace separately. VAT is added where it applies.</p>
+        <p className="fine">Posty's first month plus the domain's first year. Google bills Workspace separately. Posty adds no VAT.</p>
         <SupportChat compact stage="checkout" title="Ask before you pay" intro="Questions about what happens next?" context={{ address: pick.address, plan }} />
       </aside>
     </section>

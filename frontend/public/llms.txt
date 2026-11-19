@@ -9,7 +9,7 @@ Posty is run by Andreas Keinicke Holding ApS (CVR 39464640), Silkeborg, Denmark.
 - Posty: 5 USD a month (search, setup, records, support)
 - Google Workspace Business Starter: from 7 USD a month, billed by Google directly
 - Domain: at registrar cost, usually 11 to 25 USD a year
-- Typical total: about 13 USD a month. VAT is added at checkout where it applies.
+- Typical total: about 13 USD a month. Posty adds no VAT to its own 5 USD; Google may add VAT to its Workspace bill where it applies.
 
 ## How it works
 

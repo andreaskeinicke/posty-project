@@ -241,7 +241,7 @@ export function Footer() {
           <Link to="/agents">For AI assistants</Link>
           <a href={'mailto:' + HELLO}>{HELLO}</a>
         </nav>
-        <p className="legal mono">Andreas Keinicke Holding ApS · CVR 39464640 · Silkeborg</p>
+        <p className="legal mono">© 2026 Posty</p>
       </div>
     </footer>
   );

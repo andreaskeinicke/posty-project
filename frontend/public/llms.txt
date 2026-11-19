@@ -2,7 +2,7 @@
 
 > Posty gets people a personal email address on their own domain, like maya@lindqvist.me, set up as a real Gmail inbox through Google Workspace. You type your name, pick an address whose domain is free, press one button, and Posty registers the domain in your name and does all the DNS and Google setup.
 
-Posty is run by Andreas Keinicke Holding ApS (CVR 39464640), Silkeborg, Denmark. Contact: hello@posty.club.
+Contact: hello@posty.club.
 
 ## Pricing
 
